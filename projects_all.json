@@ -1,0 +1,31 @@
+
+Fatal error: Allowed memory size of 536870912 bytes exhausted (tried to allocate 80 bytes) in /Users/pvhee/Sites/cordis/includes/database/query.inc on line 1722
+
+Call Stack:
+    0.0008     695496   1. {main}() /usr/local/Cellar/drush/5.9/libexec/drush.php:0
+    0.0303    4841448   2. drush_main() /usr/local/Cellar/drush/5.9/libexec/drush.php:16
+    0.1036   12868408   3. _drush_bootstrap_and_dispatch() /usr/local/Cellar/drush/5.9/libexec/drush.php:61
+    0.3678   65079256   4. drush_dispatch() /usr/local/Cellar/drush/5.9/libexec/drush.php:92
+    0.4144   65924480   5. call_user_func_array() /usr/local/Cellar/drush/5.9/libexec/includes/command.inc:175
+    0.4144   65924816   6. drush_command() /usr/local/Cellar/drush/5.9/libexec/includes/command.inc:175
+    0.4147   65928688   7. _drush_invoke_hooks() /usr/local/Cellar/drush/5.9/libexec/includes/command.inc:208
+    0.4155   65992240   8. call_user_func_array() /usr/local/Cellar/drush/5.9/libexec/includes/command.inc:334
+    0.4155   65992576   9. drush_core_php_eval() /usr/local/Cellar/drush/5.9/libexec/includes/command.inc:334
+    0.4156   65994360  10. eval('cordis_api_drush_json('cordis_api_projects_all', 0);;') /usr/local/Cellar/drush/5.9/libexec/commands/core/core.drush.inc:1047
+    0.4156   65994496  11. cordis_api_drush_json() /usr/local/Cellar/drush/5.9/libexec/commands/core/core.drush.inc(1047) : eval()'d code:1
+    0.4156   65994544  12. call_user_func() /Users/pvhee/Sites/cordis/sites/all/modules/custom/cordis_api/cordis_api.module:149
+    0.4156   65994576  13. cordis_api_projects_all() /Users/pvhee/Sites/cordis/sites/all/modules/custom/cordis_api/cordis_api.module:149
+  276.2486  536441600  14. node_load() /Users/pvhee/Sites/cordis/sites/all/modules/custom/cordis_api/cordis_api.module:134
+  276.2486  536442344  15. node_load_multiple() /Users/pvhee/Sites/cordis/modules/node/node.module:965
+  276.2486  536442448  16. entity_load() /Users/pvhee/Sites/cordis/modules/node/node.module:946
+  276.2486  536442448  17. EntityCacheNodeController->load() /Users/pvhee/Sites/cordis/includes/common.inc:7821
+  276.2486  536442448  18. EntityCacheControllerHelper::entityCacheLoad() /Users/pvhee/Sites/cordis/sites/all/modules/contrib/entitycache/entitycache.module:199
+  276.2517  536470792  19. NodeController->attachLoad() /Users/pvhee/Sites/cordis/sites/all/modules/contrib/entitycache/entitycache.module:103
+  276.2517  536471536  20. DrupalDefaultEntityController->attachLoad() /Users/pvhee/Sites/cordis/modules/node/node.module:4151
+  276.2517  536471856  21. field_attach_load() /Users/pvhee/Sites/cordis/includes/entity.inc:316
+  276.2521  536500560  22. module_invoke() /Users/pvhee/Sites/cordis/modules/field/field.attach.inc:709
+  276.2521  536505432  23. call_user_func_array() /Users/pvhee/Sites/cordis/includes/module.inc:866
+  276.2521  536506144  24. field_sql_storage_field_storage_load() /Users/pvhee/Sites/cordis/includes/module.inc:866
+  276.2529  536543984  25. SelectQuery->condition() /Users/pvhee/Sites/cordis/modules/field/modules/field_sql_storage/field_sql_storage.module:341
+  276.2529  536543984  26. DatabaseCondition->condition() /Users/pvhee/Sites/cordis/includes/database/select.inc:1007
+
