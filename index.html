@@ -220,8 +220,8 @@ var n = this,
    return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
 };
 
-d3.json("projects.json", function(error, projects) {
-// d3.json("projects_big.json", function(error, projects) {
+// d3.json("projects.json", function(error, projects) {
+d3.json("projects_big.json", function(error, projects) {
 
   // Various formatters.
   var formatNumber = d3.format(",d"),
@@ -242,7 +242,14 @@ d3.json("projects.json", function(error, projects) {
     d.index = i;
     d.date = new Date(d.start_date * 1000);
     d.end_date = new Date(d.end_date * 1000);
-    d.leader = d.participants[0];
+
+
+    if (d.participants[0] && d.participants[0].country) {
+      d.leaderCountry = d.participants[0].country;
+    } else {
+      d.leaderCountry = 'unknown';
+    }
+
   });
 
   // Create the crossfilter for the relevant dimensions and groups.
@@ -257,7 +264,7 @@ d3.json("projects.json", function(error, projects) {
 
       index = project.dimension(function(d) { return d.index; }),
 
-      byCountry = project.dimension(function(d) { return d.leader.country; });
+      byCountry = project.dimension(function(d) { return d.leaderCountry; });
 
   var charts = [
 
@@ -282,11 +289,20 @@ d3.json("projects.json", function(error, projects) {
 
   // The map
   var map = new L.Map("map", {center: [48, 9], zoom: 3})
-    .addLayer(new L.TileLayer("http://{s}.tile.cloudmade.com/{key}/{styleId}/256/{z}/{x}/{y}.png", {
+    .addLayer(new L.TileLayer("http://{s}.tile.cloudmade.com/{key}/997/256/{z}/{x}/{y}.png", {
       attribution: '<b>Developed by <a href="http://openconsortium.eu/" target="_blank" class="oc-logo">Open Consortium</a>.</b> Map data &copy; 2011 OpenStreetMap contributors, Imagery &copy; 2011 CloudMade',
-      key: 'BC9A493B41014CAABB98F0471D759707',
-      styleId: 22677
+      // key: '03d33ad133d34ae39b3990819a502f17',
+      key: 'c8744de7fa7944169afa48842c7fcbdb',
+      // styleId: 22677
+      // styleId: 997,
+      maxZoom: 18,
     }));
+
+
+// L.tileLayer('http://{s}.tile.cloudmade.com/API-key/997/256/{z}/{x}/{y}.png', {
+//     attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
+//     maxZoom: 18
+// }).addTo(map);
 
   var markers = L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40});
   var markers_list = {};
