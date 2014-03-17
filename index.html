@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>Crossfilter</title>
+
 <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
   
 <!-- Markercluster -->
 <link rel="stylesheet" href="lib/Leaflet.markercluster/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="lib/Leaflet.markercluster/dist/MarkerCluster.Default.css" />
 <!--[if lte IE 8]><link rel="stylesheet" href="lib/Leaflet.markercluster/dist/MarkerCluster.Default.ie.css" /><![endif]-->
+
+<!-- Bootstrap -->
+<link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
 
@@ -145,10 +149,21 @@ h1, h2 {
   width: 100px;
 }
 
-#project-list div.acronym,
+#project-list div.acronym {
+  width: 160px;
+  padding-right: 10px;
+  text-align: right;
+}
+
+#project-list div.project-call {
+  width: 200px;
+  padding-left: 10px;
+  text-align: left;
+}
+
 #project-list div.funding,
 #project-list div.duration {
-  width: 160px;
+  width: 100px;
   padding-right: 10px;
   text-align: right;
 }
@@ -174,6 +189,13 @@ aside {
 
 <aside id="totals"><span id="active">-</span> of <span id="total">-</span> projects selected.</aside>
 
+<div id="lists">
+  <div id="project-list" class="list"></div>
+  <div id="country-list" class="list"></div>
+  <div id="project-calls-list" class="list"></div>
+</div>
+
+
 <div id="charts">
 
   <div id="date-chart" class="chart">
@@ -190,10 +212,40 @@ aside {
 <div id="map"></div>
 
 
-<div id="lists">
-  <div id="country-list" class="list"></div>
-  <div id="project-list" class="list"></div>
-</div>
+
+<!-- <div class="modal fade in" aria-hidden="false" aria-labelledby="datapointevent" role="dialog" tabindex="-1" id="myModal" style="display: block;">
+  <div class="modal-header">
+    <button class="close" aria-hidden="true" data-dismiss="modal" type="button">x</button>
+    <h4 id="datapointevent"></h4>
+  </div>
+  <div class="modal-body">
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span4">
+          <h4>Event Date</h4>
+          <span id="datapointdate">December 24, 2013</span>
+        </div>
+        <div class="span4">
+          <h4>Location</h4>
+          <span id="datapointlocation">Iran/Mashhad</span>
+        </div>
+        <div class="span4">
+          <h4>Stage</h4>
+          <span id="datapointstage">Polarization</span>
+        </div>
+      </div>
+      <div class="row-fluid">
+        <div class="span12">
+          <h4 class="control-label" for="description">Description</h4>
+          <span id="datapointdescription">On the morning of December 24, agents from the Ministry of Intelligence in Iran arrested Mozhde Zohuri, ( مژده ظهوری ) in her home in Mashhad. They also searched her home and seized religious books, a mobile phone and some personal effects. Mozhde Zohuri is the wife of Farhad Fahandezh (فرهاد فهندژ), who was arrested in his home on October 16, 2012, and later transferred first to Evin prison and then to Raja’i Shahr, before being sentenced to 10 years in prison. He is serving his sentence in Raja’i Shahr.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn" aria-hidden="true" data-dismiss="modal">Close</button>
+  </div>
+</div> -->
 
 <span style="float:right;" class="attribution">
   Original data from <a href="http://cordis.europa.eu/">Cordis</a>.
@@ -221,7 +273,9 @@ var n = this,
 };
 
 // d3.json("projects.json", function(error, projects) {
-d3.json("projects_big.json", function(error, projects) {
+// d3.json("projects_big.json", function(error, projects) {
+// d3.json("projects_1000.json", function(error, projects) {
+d3.json("projects_all.json", function(error, projects) {
 
   // Various formatters.
   var formatNumber = d3.format(",d"),
@@ -246,25 +300,42 @@ d3.json("projects_big.json", function(error, projects) {
 
     if (d.participants[0] && d.participants[0].country) {
       d.leaderCountry = d.participants[0].country;
-    } else {
+
+      if ('lat' in d.participants[0] && 'lon' in d.participants[0]) {
+        d.lat = d.participants[0].lat;
+        d.lon = d.participants[0].lon;
+      }
+
+    }  else {
       d.leaderCountry = 'unknown';
     }
-
   });
 
   // Create the crossfilter for the relevant dimensions and groups.
-  var project = crossfilter(projects),
-      all = project.groupAll(),
+  var project = crossfilter(projects);
+  var all = project.groupAll();
       
-      date = project.dimension(function(d) { return d.date; }),
-      dates = date.group(d3.time.day),
+  var date = project.dimension(function(d) { return d.date; });
+  var dates = date.group(d3.time.day);
       
-      end_date = project.dimension(function(d) { return d.end_date; }),
-      end_dates = end_date.group(d3.time.day)
+  var end_date = project.dimension(function(d) { return d.end_date; });
+  var end_dates = end_date.group(d3.time.day);
 
-      index = project.dimension(function(d) { return d.index; }),
+  var index = project.dimension(function(d) { return d.rcn; });
 
-      byCountry = project.dimension(function(d) { return d.leaderCountry; });
+  var byFunding = project.dimension(function (d) { return d.funding; });
+
+  var byCountry = project.dimension(function(d) { return d.leaderCountry; });
+
+  // var byLocation = project.dimension(function(d) { 
+  //   if ('lat' in d) {
+  //     return [d.lat, d.lon];
+  //   } else {
+  //     return [0,0];
+  //   }
+  // });
+
+  var byProjectCall = project.dimension(function (d) { return d.project_call; });
 
   var charts = [
 
@@ -298,12 +369,6 @@ d3.json("projects_big.json", function(error, projects) {
       maxZoom: 18,
     }));
 
-
-// L.tileLayer('http://{s}.tile.cloudmade.com/API-key/997/256/{z}/{x}/{y}.png', {
-//     attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
-//     maxZoom: 18
-// }).addTo(map);
-
   var markers = L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40});
   var markers_list = {};
   map.addLayer(markers);
@@ -323,6 +388,9 @@ d3.json("projects_big.json", function(error, projects) {
   var listCountries = d3.select("#country-list")
       .data([countryList]);
 
+  var listProjectCalls = d3.select('#project-calls-list')
+    .data([projectCallList]);
+
   // Render the total.
   d3.selectAll("#total")
       .text(formatNumber(project.size()));
@@ -339,6 +407,7 @@ d3.json("projects_big.json", function(error, projects) {
     chart.each(render);
     list.each(render);
     listCountries.each(render);
+    listProjectCalls.each(render);
     d3.select("#active").text(formatNumber(all.value()));
     mapData();
   }
@@ -355,50 +424,90 @@ d3.json("projects_big.json", function(error, projects) {
 
   // This gets triggered by the country click and reduces data
   window.filterCountry = function(country) {
-    byCountry.filterFunction(function(c) {
-      if (c == country) {
-        return true;
-      }
-      return false;
-    });
-
+    byCountry.filter(country);
     renderAll();
   };
+
+  window.filterProjectCall = function(call) {
+    byProjectCall.filter(call);
+    renderAll();
+  }
 
   window.reset = function(i) {
     charts[i].filter(null);
     renderAll();
   };
 
+  window.showModal = function(rcn) {
+    index.filter(rcn);
+    index.top(Infinity).forEach(function(p,i) {
+      console.log(p); 
+      d3.select('#datapointevent').text(p.title);
+    });
+    index.filterAll(null);
+    $('#myModal').modal('toggle');
+    window.history.replaceState("", "title", "?rcn="+rcn);
+
+  };
+
   function mapData() {
     markers.clearLayers();
 
-    index.top(50).forEach(function(d, i) {
+    byFunding.top(50).forEach(function(d, i) {
       leader = d.participants[0];
       if (leader && 'lat' in leader && 'lon' in leader) {
         var marker = L.marker([leader.lat, leader.lon]);
         markers.addLayer(marker);
       }
-    });    
+    });
+
+    map.fitBounds(markers);
   }
+
+  // // Filter data on cluster click
+  // markers.on('clusterclick', function (a) {
+  //   // console.log(a);
+
+  //   selected = a.layer.getAllChildMarkers();
+  //   // console.log(selected);
+  //   // 
+    
+
+  //     selected.forEach(function (k) {
+  //       console.log(k);
+  //     });
+
+
+
+
+  //   byLocation.filterFunction(function (d) {
+  //     // console.log(d);
+  //     // for
+  //     // 
+      
+
+  //     // for (var k in selsected) {
+  //       // if (d.lat = )
+  //     // }
+  //   });
+  // });
 
   function countryList(div) {
     div.each(function() {
-
-      console.log(this);
-
       var countries = d3.select(this).selectAll(".country")
         .data(byCountry.group().top(Infinity), function(d) {
           return d.key+d.value;
       });
 
-      var countriesEnter = countries.enter().append("div")
-        .attr("class", "country");
-
-      countriesEnter.append("a")
+      var countriesEnter = countries.enter()
+        .append("div")
+        .attr("class", "country")
+        .append("a")
         .attr("class", "title")
         .attr('href', '#')
-        .attr('onclick', function(d) { return ("javascript:filterCountry('"+d.key+"');return false;"); })
+        .attr('onclick', function(d) { 
+          return ("javascript:filterCountry('"+d.key+"');return false;"); 
+        })
         .text(function(d) { return d.key+" ("+d.value+")"; });
 
       countries.exit().remove();
@@ -407,20 +516,43 @@ d3.json("projects_big.json", function(error, projects) {
     });
   }
 
-  function projectList(div) {
+  function projectCallList(div) {
+    div.each(function() {
+      var projectCalls = d3.select(this).selectAll(".project-call")
+        .data(byProjectCall.group().top(Infinity), function(d) {
+          return d.key+d.value;
+      });
 
-    console.log(div);
+      var enter = projectCalls.enter()
+        .append("div")
+        .attr("class", "project-call")
+        .append("a")
+        .attr("class", "title")
+        .attr('href', '#')
+        .attr('onclick', function(d) { 
+          return ("javascript:filterProjectCall('"+d.key+"');return false;"); 
+        })
+        .text(function(d) { return d.key+" ("+d.value+")"; });
+
+      projectCalls.exit().remove();
+      projectCalls.order();
+
+    });    
+  }
+
+  function projectList(div) {
     var projectsByDate = nestByDate.entries(date.top(50));
 
     div.each(function() {
       var date = d3.select(this).selectAll(".date")
           .data(projectsByDate, function(d) { return d.key; });
 
-      date.enter().append("div")
-          .attr("class", "date")
+      date.enter()
         .append("div")
-          .attr("class", "day")
-          .text(function(d) { return formatMonth(d.values[0].date); });
+        .attr("class", "date")
+        .append("div")
+        .attr("class", "day")
+        .text(function(d) { return formatMonth(d.values[0].date); });
 
       date.exit().remove();
 
@@ -432,8 +564,14 @@ d3.json("projects_big.json", function(error, projects) {
 
       projectEnter.append("div")
           .attr("class", "acronym")
-          // .text(function(d) { return '<a href="' + d.url + '">' + d.project_acronym + '</a>'; });
+          .append("a")
+          // .attr("href", function(d) { return ("?rcn=" + d.rcn); })
+          .attr("onclick",function(d) { return ("javascript:showModal('"+d.rcn+"'); return false;"); })
           .text(function(d) { return d.project_acronym; });
+
+      projectEnter.append("div")
+          .attr("class", "project-call")
+          .text(function(d) { return d.project_call; });
 
       projectEnter.append("div")
           .attr("class", "funding")
@@ -651,4 +789,7 @@ d3.json("projects_big.json", function(error, projects) {
 </script>
 <script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
 <script src="lib/Leaflet.markercluster/dist/leaflet.markercluster-src.js"></script>
-
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="lib/bootstrap/js/bootstrap.min.js"></script>
