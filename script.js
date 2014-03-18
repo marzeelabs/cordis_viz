@@ -11,7 +11,6 @@ var n = this,
 };
 
 // d3.json("projects.json", function(error, projects) {
-// d3.json("projects_big.json", function(error, projects) {
 // d3.json("projects_1000.json", function(error, projects) {
 d3.json("projects_all.json", function(error, projects) {
 
@@ -21,7 +20,6 @@ d3.json("projects_all.json", function(error, projects) {
       formatMonth = d3.time.format("%B %Y"),
       formatDate = d3.time.format("%B %d, %Y"),
       formatTime = d3.time.format("%I:%M %p");
-
 
   // A nest operator, for grouping the project list.
   var nestByDate = d3.nest()
@@ -47,6 +45,9 @@ d3.json("projects_all.json", function(error, projects) {
     }  else {
       d.leaderCountry = 'unknown';
     }
+
+    d.funding = parseInt(d.funding);
+    d.cost = parseInt(d.cost);
   });
 
   // Create the crossfilter for the relevant dimensions and groups.
@@ -64,6 +65,7 @@ d3.json("projects_all.json", function(error, projects) {
   var byFunding = project.dimension(function (d) { return d.funding; });
 
   var byCountry = project.dimension(function(d) { return d.leaderCountry; });
+  var byCountry2 = project.dimension(function(d) { return d.leaderCountry; });
 
   // var byLocation = project.dimension(function(d) { 
   //   if ('lat' in d) {
@@ -146,8 +148,19 @@ d3.json("projects_all.json", function(error, projects) {
     list.each(render);
     listCountries.each(render);
     listProjectCalls.each(render);
-    d3.select("#active").text(formatNumber(all.value()));
     mapData();
+
+    // Update counts
+    d3.select("#active").text(formatNumber(all.value()));
+    d3.select("#total-funding").text(project.groupAll().reduceSum(function(d) { return d.funding; }).value().formatMoney(0));
+
+    countries = 0;
+    byCountry2.group().top(Infinity).forEach(function(d) {
+      if (d.value > 0) {
+        countries++;
+      } 
+    });
+    d3.select("#total-countries").text(countries);
   }
 
   function dateMonthDifference(d1, d2) {
@@ -176,10 +189,13 @@ d3.json("projects_all.json", function(error, projects) {
     renderAll();
   };
 
+  // window.resetAll = function() {
+  //   charts.each(filter(null));
+  // }
+
   window.showModal = function(rcn) {
     index.filter(rcn);
     index.top(Infinity).forEach(function(p,i) {
-      console.log(p); 
       d3.select('#datapointevent').text(p.title);
     });
     index.filterAll(null);
@@ -233,8 +249,9 @@ d3.json("projects_all.json", function(error, projects) {
   function countryList(div) {
     div.each(function() {
       var countries = d3.select(this).selectAll(".country")
-        .data(byCountry.group().top(Infinity), function(d) {
+        .data(byCountry2.group().top(Infinity), function(d) {
           return d.key+d.value;
+          // return d.key;
       });
 
       var countriesEnter = countries.enter()
@@ -331,7 +348,7 @@ d3.json("projects_all.json", function(error, projects) {
           .text(function(d) {
             // var formatCurrency = d3.format("$,.0f");
             // return formatCurrency(d.funding);
-            return (parseInt(d.funding)).formatMoney(0); 
+            return (d.funding.formatMoney(0)); 
           });
 
       projectEnter.append("div")
