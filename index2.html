@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <title>Crossfilter</title>
 
+<!-- Full modernizr for now, should be limited for performance -->
+<script src="/foundation/js/vendor/modernizr.js"></script>
+
 <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
   
 <!-- Markercluster -->
@@ -11,32 +14,43 @@
 <link rel="stylesheet" href="lib/Leaflet.markercluster/dist/MarkerCluster.Default.css" />
 <!--[if lte IE 8]><link rel="stylesheet" href="lib/Leaflet.markercluster/dist/MarkerCluster.Default.ie.css" /><![endif]-->
 
-<!-- Bootstrap -->
-<link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
 <!-- DC -->
 <link href="lib/dc/dc.css" rel="stylesheet">
 
 <!-- Custom style -->
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="css/app.css" />
 
 </head>
 <body>
 <div id="body">
 
-  <h1>Cordis</h1>
-  <h2>Visualization of Science Funding in Europe</h2>
+  <div class="row">
+  
+    <h1>Cordis</h1>
+    <h2>Visualization of Science Funding in Europe</h2>
+  
+  </div>
 
-  <aside id="totals">
+
+  <div id="totals" class="row">
+    <div class="medium-4 columns">
     <span id="active">-</span> of <span id="total">-</span> projects selected.
-    <br/>
+    </div>
+    
+    <div class="medium-4 columns">
     <span id="total-funding">-</span> total funding.
-    <br/>
+    </div>
+
+    <div class="medium-4 columns">
     <span id="total-countries">-</span> leading countries.
-  </aside>
+    </div>
+  </div>
 
-  <div id="dc-bubble">
-
+  <div class="row">
+    <div id="dc-bubble">
+  
+    </div>
   </div>
 
   <div id="europe-chart">
@@ -52,8 +66,8 @@
     </thead>
   </table> -->
 
-
-  <div id="charts">
+  
+  <div id="charts" class="row">
 
     <div id="date-chart" class="chart">
       <div class="title">Project Start Date</div>
@@ -63,35 +77,43 @@
       <div class="title">Project End Date</div>
     </div>
   </div>
+  
+  </div>
+  
+  <div class="row">
+    <div id="map"></div>
+  </div>
 
-  <div id="map"></div>
-
-  <div id="lists">
-    <div class="row">
-      
-      <div id="country-list-wrapper" class="list col-md-8">
-        <input class="search" placeholder="Search" />
-        <ul id="country-list" class="list"></ul>
-        <ul class="pagination"></ul>
-      </div>
-      
-      <div id="project-calls-list-wrapper" class="list col-md-4">
-        <input class="search" placeholder="Search" />
-        <ul id="project-calls-list" class="list"></ul>
-        <ul class="pagination"></ul>
-      </div>
-
+  
+  <div id="lists" class="row">
+   
+    <div id="country-list-wrapper" class="list medium-6 columns">
+      <input class="search" placeholder="Search" />
+      <ul id="country-list" class="list"></ul>
+      <ul class="pagination"></ul>
     </div>
+    
+    <div id="project-calls-list-wrapper" class="list medium-6 columns">
+      <input class="search" placeholder="Search" />
+      <ul id="project-calls-list" class="list"></ul>
+      <ul class="pagination"></ul>
+    </div>
+
+  </div>
+  
+  <div class="row">
     <div id="project-list" class="list"></div>
   </div>
 
-
-  <span style="float:right;" class="attribution">
-    Original data from <a href="http://cordis.europa.eu/">Cordis</a>.
-  </span>
-
-  <footer>
-    Copyright 2014 <a href="http://openconsortium.eu">Open Consortium</a>
+  
+  <footer class="row">
+    <div class="attribution medium-6 medium-push-6 columns medium-text-right">
+      Original data from <a href="http://cordis.europa.eu/">Cordis</a>.
+    </div>
+  
+    <div class="copyright medium-6 medium-pull-6 columns">
+      Copyright 2014 <a href="http://openconsortium.eu">Open Consortium</a>
+    </div>
   </footer>
 
 </div>
@@ -102,10 +124,9 @@
 <script src="lib/list.pagination.min.js"></script>
 <script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
 <script src="lib/Leaflet.markercluster/dist/leaflet.markercluster-src.js"></script>
-<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-<!-- Include all compiled plugins (below), or include individual files as needed -->
-<script src="lib/bootstrap/js/bootstrap.min.js"></script>
+<!-- jQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+<script src="/foundation/js/vendor/fastclick.js"></script>
 <!-- DC -->
 <script src='lib/dc/dc.js' type='text/javascript'></script>
 <!-- Our custom script -->
