@@ -10,9 +10,9 @@ var n = this,
    return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
 };
 
-d3.json("projects.json", function(error, projects) {
+// d3.json("projects.json", function(error, projects) {
 // d3.json("projects_1000.json", function(error, projects) {
-// d3.json("projects_all.json", function(error, projects) {
+d3.json("projects_all.json", function(error, projects) {
 
   // Various formatters.
   var formatNumber = d3.format(",d"),
@@ -20,6 +20,11 @@ d3.json("projects.json", function(error, projects) {
       formatMonth = d3.time.format("%B %Y"),
       formatDate = d3.time.format("%B %d, %Y"),
       formatTime = d3.time.format("%I:%M %p");
+
+  var formatEuro = function(val) { 
+    var si = d3.format(".2s");
+    return si(val).replace(/G/, 'B');
+  };
 
   // A nest operator, for grouping the project list.
   var nestByDate = d3.nest()
@@ -49,6 +54,8 @@ d3.json("projects.json", function(error, projects) {
     d.funding = parseInt(d.funding);
     d.cost = parseInt(d.cost);
   });
+
+
 
   // Create the crossfilter for the relevant dimensions and groups.
   var project = crossfilter(projects);
@@ -97,6 +104,126 @@ d3.json("projects.json", function(error, projects) {
         .rangeRound([0, 10 * 90]))
         .filter([new Date(2006, 1, 1), new Date(2020, 2, 1)])
   ];
+
+
+  // DC
+  var bubbleChart = dc.bubbleChart('#dc-bubble');
+  var dataTable = dc.dataTable("#dc-table-graph");
+
+  // Dimensions needed
+  var byCountry3 = project.dimension(function(d) { return d.leaderCountry; });
+  // var byCountryGroup3 = byCountry3.group().reduceCount();
+  var byCountryGroup3 = byCountry3.group().reduce(
+    function (p,v) {
+      ++p.totalProjects;
+      p.totalFunding += v.funding;
+      p.totalPartners += v.participants.length;
+      p.avgPartners = p.totalPartners / p.totalProjects;
+      return p;
+    },
+    function (p,v) {
+      --p.totalProjects;
+      p.totalFunding -= v.funding;
+      p.totalPartners -= v.participants.length;
+      p.avgPartners = p.totalPartners / p.totalProjects;
+      return p;
+    },
+    function () {
+      return {
+        totalProjects: 0,
+        totalFunding: 0,
+        totalPartners: 0,
+        avgPartners: 0,
+      }
+    }
+  );
+
+  var index3 = project.dimension(function(d) { return d.rcn; });
+  var indexGroup3 = index3.group();
+
+  dataTable.width(800).height(800)
+    .dimension(index3)
+    .group(function(d) { return "List of all Selected Businesses"
+     })
+    .size(10)
+    .columns([
+        function(d) { return d.project_acronym; },
+        // function(d) { return d.project_call; },
+        function(d) { return d.funding.formatMoney(0); }
+        // function(d) { return d.review_count; },
+        // function(d) { return '<a href=\"http://maps.google.com/maps?z=12&t=m&q=loc:' + d.latitude + '+' + d.longitude +"\" target=\"_blank\">Map</a>"}
+    ])
+    .sortBy(function(d){ return d.funding; })
+    // (optional) sort order, :default ascending
+    .order(d3.descending);
+
+  bubbleChart.width(850)
+    .height(500)
+    .dimension(byCountry3)
+    .group(byCountryGroup3)
+    .transitionDuration(1500)
+    .colors(d3.scale.category10())
+    .x(d3.scale.linear())
+    .y(d3.scale.linear())
+    .maxBubbleRelativeSize(0.15)
+    .keyAccessor(function (p) {
+      // X axis
+      // return p.value.totalFunding;
+      return p.value.totalProjects;
+    })
+    .valueAccessor(function (p) {
+      // Y axis
+      return p.value.avgPartners;
+    })
+    .radiusValueAccessor(function (p) {
+      // return p.value.totalProjects;
+      return p.value.totalFunding;
+    })
+    .transitionDuration(1500)
+    .elasticRadius(true)
+    .elasticY(true)
+    .elasticX(true)
+    .yAxisPadding("10%")
+    .xAxisPadding("15%")
+    .xAxisLabel('Total number of projects')
+    .yAxisLabel('Average number of partners')
+    .label(function (p) {
+      return p.key;
+    })
+    .title(function (p) {
+      console.log(p);
+      var numberFormat = d3.format("$.2r");
+      return p.key 
+        + "\n" 
+        + "Total projects: " + p.value.totalProjects + "\n" 
+        + "Total funding: " + formatEuro(p.value.totalFunding) + "\n"
+        + "Average number of partners: " + formatEuro(p.value.avgPartners) + "\n";
+    })
+    .renderLabel(true)
+    .renderTitle(true)
+    .renderlet(function (chart) {
+      // console.log(chart);
+      // rowChart.filter(chart.filter());
+    })
+    .on("postRedraw", function (chart) {
+      // renderAll();
+      // console.log("POST REDRAW");
+            // console.log(chart);
+      // dc.events.trigger(function () {
+      //   rowChart.filter(chart.filter());
+      // });
+    });
+
+  // bubbleChart.yAxis().tickFormat(function (s) {
+  //   return s + " partners";
+  // });
+  bubbleChart.xAxis().tickFormat(function (s) {
+    return formatEuro(s);
+    // return s + "M";
+  });
+
+  dc.renderAll();
+
 
   // The map
   var map = new L.Map("map", {center: [48, 9], zoom: 3})
@@ -161,6 +288,10 @@ d3.json("projects.json", function(error, projects) {
       } 
     });
     d3.select("#total-countries").text(countries);
+
+
+    // Make our DC
+    // dc.redrawAll();
   }
 
   function dateMonthDifference(d1, d2) {
@@ -249,12 +380,13 @@ d3.json("projects.json", function(error, projects) {
   function countryList(div) {
     div.each(function() {
 
-      console.log(d3.select(this).selectAll(".country"));
-
       var countries = d3.select(this).selectAll(".country")
-        .data(byCountry2.group().top(Infinity), function(d) {
+        .data(byCountry2.group().reduceCount().top(Infinity), function(d) {
+
+          return d.key;
+
           // Only consider valid groups 
-          if (d.key == 'IL') {
+          if (d.value > 0) {
             return d.key;
           } else {
             return -1;
@@ -337,38 +469,38 @@ d3.json("projects.json", function(error, projects) {
 
       date.exit().remove();
 
-      // var project = date.order().selectAll(".flight")
-      //     .data(function(d) { return d.values; }, function(d) { return d.index; });
+      var project = date.order().selectAll(".flight")
+          .data(function(d) { return d.values; }, function(d) { return d.index; });
 
-      // var projectEnter = project.enter().append("div")
-      //     .attr("class", "flight");
+      var projectEnter = project.enter().append("div")
+          .attr("class", "flight");
 
-      // projectEnter.append("div")
-      //     .attr("class", "acronym")
-      //     .append("a")
-      //     // .attr("href", function(d) { return ("?rcn=" + d.rcn); })
-      //     .attr("onclick",function(d) { return ("javascript:showModal('"+d.rcn+"'); return false;"); })
-      //     .text(function(d) { return d.project_acronym; });
+      projectEnter.append("div")
+          .attr("class", "acronym")
+          .append("a")
+          // .attr("href", function(d) { return ("?rcn=" + d.rcn); })
+          .attr("onclick",function(d) { return ("javascript:showModal('"+d.rcn+"'); return false;"); })
+          .text(function(d) { return d.project_acronym; });
 
-      // projectEnter.append("div")
-      //     .attr("class", "project-call")
-      //     .text(function(d) { return d.project_call; });
+      projectEnter.append("div")
+          .attr("class", "project-call")
+          .text(function(d) { return d.project_call; });
 
-      // projectEnter.append("div")
-      //     .attr("class", "funding")
-      //     .text(function(d) {
-      //       // var formatCurrency = d3.format("$,.0f");
-      //       // return formatCurrency(d.funding);
-      //       return (d.funding.formatMoney(0)); 
-      //     });
+      projectEnter.append("div")
+          .attr("class", "funding")
+          .text(function(d) {
+            // var formatCurrency = d3.format("$,.0f");
+            // return formatCurrency(d.funding);
+            return (d.funding.formatMoney(0)); 
+          });
 
-      // projectEnter.append("div")
-      //     .attr('class', 'duration')
-      //     .text(function(d) { return dateMonthDifference(d.date, d.end_date); });
+      projectEnter.append("div")
+          .attr('class', 'duration')
+          .text(function(d) { return dateMonthDifference(d.date, d.end_date); });
 
-      // project.exit().remove();
+      project.exit().remove();
 
-      // project.order();
+      project.order();
     });
   }
 
