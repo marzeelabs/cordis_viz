@@ -114,10 +114,14 @@
 // TYPOGRAPHY
 //
 
+@import url(http://fonts.googleapis.com/css?family=Lobster);
+
+$lobster-font: "Lobster";
+
 // $include-html-type-classes: $include-html-classes;
 
 // We use these to control header font styles
-// $header-font-family: $body-font-family;
+$header-font-family: $lobster-font;
 // $header-font-weight: normal;
 // $header-font-style: normal;
 // $header-font-color: #222;
