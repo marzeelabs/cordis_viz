@@ -191,7 +191,6 @@ d3.json("projects_all.json", function(error, projects) {
       return p.key;
     })
     .title(function (p) {
-      console.log(p);
       var numberFormat = d3.format("$.2r");
       return p.key 
         + "\n" 
@@ -222,23 +221,26 @@ d3.json("projects_all.json", function(error, projects) {
     // return s + "M";
   });
 
+
+
+
   dc.renderAll();
 
 
-  // The map
-  var map = new L.Map("map", {center: [48, 9], zoom: 3})
-    .addLayer(new L.TileLayer("http://{s}.tile.cloudmade.com/{key}/997/256/{z}/{x}/{y}.png", {
-      attribution: '<b>Developed by <a href="http://openconsortium.eu/" target="_blank" class="oc-logo">Open Consortium</a>.</b> Map data &copy; 2011 OpenStreetMap contributors, Imagery &copy; 2011 CloudMade',
-      // key: '03d33ad133d34ae39b3990819a502f17',
-      key: 'c8744de7fa7944169afa48842c7fcbdb',
-      // styleId: 22677
-      // styleId: 997,
-      maxZoom: 18,
-    }));
+  // // The map
+  // var map = new L.Map("map", {center: [48, 9], zoom: 3})
+  //   .addLayer(new L.TileLayer("http://{s}.tile.cloudmade.com/{key}/997/256/{z}/{x}/{y}.png", {
+  //     attribution: '<b>Developed by <a href="http://openconsortium.eu/" target="_blank" class="oc-logo">Open Consortium</a>.</b> Map data &copy; 2011 OpenStreetMap contributors, Imagery &copy; 2011 CloudMade',
+  //     // key: '03d33ad133d34ae39b3990819a502f17',
+  //     key: 'c8744de7fa7944169afa48842c7fcbdb',
+  //     // styleId: 22677
+  //     // styleId: 997,
+  //     maxZoom: 18,
+  //   }));
 
-  var markers = L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40});
-  var markers_list = {};
-  map.addLayer(markers);
+  // var markers = L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40});
+  // var markers_list = {};
+  // map.addLayer(markers);
 
   // Given our array of charts, which we assume are in the same order as the
   // .chart elements in the DOM, bind the charts to the DOM and render them.
@@ -275,7 +277,7 @@ d3.json("projects_all.json", function(error, projects) {
     list.each(render);
     listCountries.each(render);
     listProjectCalls.each(render);
-    mapData();
+    // mapData();
 
     // Update counts
     d3.select("#active").text(formatNumber(all.value()));
