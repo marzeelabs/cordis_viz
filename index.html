@@ -2,7 +2,10 @@
 <html lang='en'>
 <head>
 <meta charset="utf-8">
-<title>Crossfilter</title>
+<title>Science funding in Europe</title>
+
+<!-- Full modernizr for now, should be limited for performance -->
+<script src="/foundation/js/vendor/modernizr.js"></script>
 
 <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
   
@@ -11,103 +14,120 @@
 <link rel="stylesheet" href="lib/Leaflet.markercluster/dist/MarkerCluster.Default.css" />
 <!--[if lte IE 8]><link rel="stylesheet" href="lib/Leaflet.markercluster/dist/MarkerCluster.Default.ie.css" /><![endif]-->
 
-<!-- Bootstrap -->
-<link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- DC -->
+<link href="lib/dc/dc.css" rel="stylesheet">
 
 <!-- Custom style -->
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="css/app.css" />
 
 </head>
 <body>
 <div id="body">
 
-  <h1>Cordis</h1>
-  <h2>Visualization of Science Funding in Europe</h2>
-
-  <aside id="totals">
-    <span id="active">-</span> of <span id="total">-</span> projects selected.
-    <br/>
-    <span id="total-funding">-</span> total funding.
-    <br/>
-    <span id="total-countries">-</span> leading countries.
-  </aside>
-
-  <div id="charts">
-
-    <div id="date-chart" class="chart">
-      <div class="title">Project Start Date</div>
-    </div>
-
-    <div id="end-date-chart" class="chart">
-      <div class="title">Project End Date</div>
-    </div>
+  <div class="row">
+  
+    <h1>Cordis</h1>
+    <h2>Visualization of Science Funding in Europe</h2>
+  
   </div>
 
-  <div id="map"></div>
-
-  <div id="lists">
-    <div class="row">
-      
-      <div id="country-list-wrapper" class="list col-md-8">
-        <input class="search" placeholder="Search" />
-        <ul id="country-list" class="list"></ul>
-        <ul class="pagination"></ul>
-      </div>
-      
-      <div id="project-calls-list-wrapper" class="list col-md-4">
-        <input class="search" placeholder="Search" />
-        <ul id="project-calls-list" class="list"></ul>
-        <ul class="pagination"></ul>
-      </div>
-
-    </div>
-    <!-- <div id="country-list" class="list"></div> -->
-    <!-- <div id="project-calls-list" class="list"></div> -->
-    <div id="project-list" class="list"></div>
+  <div class="row dc-data-count">
+    <span>
+      <span class="filter-count"></span> of <span class="total-count"></span> projects selected
+      <a href="javascript:dc.filterAll(); dc.renderAll();">Reset All</a>
+    </span>
   </div>
 
 
-
-<!-- <div class="modal fade in" aria-hidden="false" aria-labelledby="datapointevent" role="dialog" tabindex="-1" id="myModal" style="display: block;">
-  <div class="modal-header">
-    <button class="close" aria-hidden="true" data-dismiss="modal" type="button">x</button>
-    <h4 id="datapointevent"></h4>
+  <div class="row">
+    <span>
+      <span class="dc-total-funding"></span> total funding
+    </span>
+<!--     <span>
+      <span class="dc-total-countries "></span> countries
+    </span> -->
   </div>
-  <div class="modal-body">
-    <div class="container-fluid">
-      <div class="row-fluid">
-        <div class="span4">
-          <h4>Event Date</h4>
-          <span id="datapointdate">December 24, 2013</span>
-        </div>
-        <div class="span4">
-          <h4>Location</h4>
-          <span id="datapointlocation">Iran/Mashhad</span>
-        </div>
-        <div class="span4">
-          <h4>Stage</h4>
-          <span id="datapointstage">Polarization</span>
-        </div>
-      </div>
-      <div class="row-fluid">
-        <div class="span12">
-          <h4 class="control-label" for="description">Description</h4>
-          <span id="datapointdescription">On the morning of December 24, agents from the Ministry of Intelligence in Iran arrested Mozhde Zohuri, ( مژده ظهوری ) in her home in Mashhad. They also searched her home and seized religious books, a mobile phone and some personal effects. Mozhde Zohuri is the wife of Farhad Fahandezh (فرهاد فهندژ), who was arrested in his home on October 16, 2012, and later transferred first to Evin prison and then to Raja’i Shahr, before being sentenced to 10 years in prison. He is serving his sentence in Raja’i Shahr.</span>
-        </div>
-      </div>
+
+  <div class="row">
+    <div id="dc-bubble">
+      <h4>Funding by coordinating country
+      <a class="reset" style="display:none;" href="javascript:bubbleChart.filterAll();dc.redrawAll();" >
+        reset
+      </a>
+      <span class="reset" style="display: none;">Current filter: <span class="filter"></span></span>
+    </h4>
+    </div>
+    <small>Note: funding is attributed to the coordinating country in case of multi-country projects</small>
+  </div>
+
+  <div class="row">
+    <div id="dc-funding-chart">
+      <h4>Funding
+        <a class="reset" style="display:none;" href="javascript:fundingChart.filterAll();dc.redrawAll();" >
+          reset
+        </a>
+        <span class="reset" style="display: none;">Current filter: <span class="filter"></span></span>
+      </h4>
     </div>
   </div>
-  <div class="modal-footer">
-    <button class="btn" aria-hidden="true" data-dismiss="modal">Close</button>
+
+  <div class="row">
+    <div id="dc-start-chart">
+      <h4>Project start date
+        <a class="reset" style="display:none;" href="javascript:startChart.filterAll();dc.redrawAll();" >
+          reset
+        </a>
+        <span class="reset" style="display: none;">Current filter: <span class="filter"></span></span>
+      </h4>
+    </div>
   </div>
-</div> -->
 
-  <span style="float:right;" class="attribution">
-    Original data from <a href="http://cordis.europa.eu/">Cordis</a>.
-  </span>
+  <div class="row">
+    <div id="dc-end-chart">
+      <h4>Project end date
+        <a class="reset" style="display:none;" href="javascript:endChart.filterAll();dc.redrawAll();" >
+          reset
+        </a>
+        <span class="reset" style="display: none;">Current filter: <span class="filter"></span></span>
+      </h4>
+    </div>
+  </div>
 
-  <footer>
-    Copyright 2014 <a href="http://openconsortium.eu">Open Consortium</a>
+  <div class="row">
+    <div id="dc-partners-chart">
+      <h4>Number of partners
+        <a class="reset" style="display:none;" href="javascript:partnersChart.filterAll();dc.redrawAll();" >
+          reset
+        </a>
+      </h4>
+    </div>
+  </div>
+
+  <div class="row">
+    <h4>List of projects</h4>
+    <table class='table table-hover dc-data-table' id='dc-table-graph'>
+      <thead>
+        <tr class='header'>
+          <th>Project</th>
+          <th>Coordinating Country</th>
+          <th>Start date</th>
+          <th>End date</th>
+          <th>Funding</th>
+          <th>RCN</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+  
+  <footer class="row">
+    <div class="attribution medium-6 medium-push-6 columns medium-text-right">
+      Original data from <a href="http://cordis.europa.eu/">Cordis</a>.
+    </div>
+  
+    <div class="copyright medium-6 medium-pull-6 columns">
+      Copyright 2014 <a href="http://openconsortium.eu">Open Consortium</a>
+    </div>
   </footer>
 
 </div>
@@ -118,10 +138,11 @@
 <script src="lib/list.pagination.min.js"></script>
 <script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
 <script src="lib/Leaflet.markercluster/dist/leaflet.markercluster-src.js"></script>
-<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-<!-- Include all compiled plugins (below), or include individual files as needed -->
-<script src="lib/bootstrap/js/bootstrap.min.js"></script>
+<!-- jQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+<script src="/foundation/js/vendor/fastclick.js"></script>
+<!-- DC -->
+<script src='lib/dc/dc.js' type='text/javascript'></script>
 <!-- Our custom script -->
 <script src="script.js"></script>
 

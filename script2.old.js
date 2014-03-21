@@ -32,13 +32,14 @@ d3.json("projects_all.json", function(error, projects) {
         return d3.time.month(d.date); 
       });
 
-  // A little coercion, since the JSON is untyped.
+  // A little coercion, since the JSON is untyped. Also do some more data processing
+  // to get everything ready for the crossfilter.
   projects.forEach(function(d, i) {
     d.index = i;
     d.date = new Date(d.start_date * 1000);
     d.end_date = new Date(d.end_date * 1000);
 
-
+    // Extract the leader country, this will used all over
     if (d.participants[0] && d.participants[0].country) {
       d.leaderCountry = d.participants[0].country;
 
@@ -46,15 +47,13 @@ d3.json("projects_all.json", function(error, projects) {
         d.lat = d.participants[0].lat;
         d.lon = d.participants[0].lon;
       }
-
     }  else {
       d.leaderCountry = 'unknown';
     }
 
-    d.funding = parseInt(d.funding);
-    d.cost = parseInt(d.cost);
+    d.funding = +d.funding;
+    d.cost = +d.cost;
   });
-
 
 
   // Create the crossfilter for the relevant dimensions and groups.
@@ -73,14 +72,6 @@ d3.json("projects_all.json", function(error, projects) {
 
   var byCountry = project.dimension(function(d) { return d.leaderCountry; });
   var byCountry2 = project.dimension(function(d) { return d.leaderCountry; });
-
-  // var byLocation = project.dimension(function(d) { 
-  //   if ('lat' in d) {
-  //     return [d.lat, d.lon];
-  //   } else {
-  //     return [0,0];
-  //   }
-  // });
 
   var byProjectCall = project.dimension(function (d) { return d.project_call; });
 
