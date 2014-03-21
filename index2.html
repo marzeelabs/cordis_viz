@@ -39,20 +39,58 @@
     </span>
   </div>
 
+
+  <div class="row">
+    <span>
+      <span class="dc-total-funding"></span> total funding
+    </span>
+<!--     <span>
+      <span class="dc-total-countries "></span> countries
+    </span> -->
+  </div>
+
   <div class="row">
     <div id="dc-bubble">
-      <h4>Funding by country
+      <h4>Funding by coordinating country
       <a class="reset" style="display:none;" href="javascript:bubbleChart.filterAll();dc.redrawAll();" >
         reset
       </a>
       <span class="reset" style="display: none;">Current filter: <span class="filter"></span></span>
     </h4>
+    </div>
+    <small>Note: funding is attributed to the coordinating country in case of multi-country projects</small>
+  </div>
 
+  <div class="row">
+    <div id="dc-start-chart">
+      <h4>Project start date
+        <a class="reset" style="display:none;" href="javascript:startChart.filterAll();dc.redrawAll();" >
+          reset
+        </a>
+        <span class="reset" style="display: none;">Current filter: <span class="filter"></span></span>
+      </h4>
     </div>
   </div>
 
-  <div id="europe-chart">
+  <div class="row">
+    <div id="dc-end-chart">
+      <h4>Project end date
+        <a class="reset" style="display:none;" href="javascript:endChart.filterAll();dc.redrawAll();" >
+          reset
+        </a>
+        <span class="reset" style="display: none;">Current filter: <span class="filter"></span></span>
+      </h4>
+    </div>
+  </div>
 
+  <div class="row">
+    <div id="dc-partners-chart">
+      <h4>Average number of partners
+        <a class="reset" style="display:none;" href="javascript:partnersChart.filterAll();dc.redrawAll();" >
+          reset
+        </a>
+      </h4>
+    </div>
   </div>
 
   <div class="row">
@@ -61,7 +99,7 @@
       <thead>
         <tr class='header'>
           <th>Project Acronym</th>
-          <th>Leading Country</th>
+          <th>Coordinating Country</th>
           <th>Start date</th>
           <th>End date</th>
           <th>RCN</th>
@@ -70,46 +108,6 @@
       </thead>
     </table>
   </div>
-
-  
-  <div id="charts" class="row">
-
-    <div id="date-chart" class="chart">
-      <div class="title">Project Start Date</div>
-    </div>
-
-    <div id="end-date-chart" class="chart">
-      <div class="title">Project End Date</div>
-    </div>
-  </div>
-  
-  </div>
-  
-  <div class="row">
-    <div id="map"></div>
-  </div>
-
-  
-  <div id="lists" class="row">
-   
-    <div id="country-list-wrapper" class="list medium-6 columns">
-      <input class="search" placeholder="Search" />
-      <ul id="country-list" class="list"></ul>
-      <ul class="pagination"></ul>
-    </div>
-    
-    <div id="project-calls-list-wrapper" class="list medium-6 columns">
-      <input class="search" placeholder="Search" />
-      <ul id="project-calls-list" class="list"></ul>
-      <ul class="pagination"></ul>
-    </div>
-
-  </div>
-  
-  <div class="row">
-    <div id="project-list" class="list"></div>
-  </div>
-
   
   <footer class="row">
     <div class="attribution medium-6 medium-push-6 columns medium-text-right">

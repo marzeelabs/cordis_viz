@@ -13,11 +13,13 @@ var n = this,
 // Our dimensional charts
 var bubbleChart = dc.bubbleChart('#dc-bubble');
 var dataTable = dc.dataTable("#dc-table-graph");
-  
+var startChart = dc.barChart("#dc-start-chart");
+var endChart = dc.barChart("#dc-end-chart");
+var partnersChart = dc.pieChart("#dc-partners-chart");
 
-d3.json("projects.json", function(error, data) {
+// d3.json("projects.json", function(error, data) {
 // d3.json("projects_1000.json", function(error, data) {
-// d3.json("projects_all.json", function(error, data) {
+d3.json("projects_all.json", function(error, data) {
 
   // Various formatters.
   var formatNumber = d3.format(",d"),
@@ -59,6 +61,7 @@ d3.json("projects.json", function(error, data) {
 
     d.funding = +d.funding;
     d.cost = +d.cost;
+    d.rcn = +d.rcn;
   });
 
 
@@ -66,13 +69,15 @@ d3.json("projects.json", function(error, data) {
   var facts = crossfilter(data);
   var all = facts.groupAll();
 
-  // Full overview
-  dc.dataCount(".dc-data-count")
-    .dimension(facts)
-    .group(all);
+  var fundingGroup = facts.groupAll().reduceSum(function(d) { return d.funding; });
+
+  // var countriesDimension = facts.dimension(function(d) { return d.leaderCountry; });
+  // var countriesGroup = countriesDimension.group().reduceSum(function(d) { return 1; });
 
   // Dimensions needed
   var byRCN = facts.dimension(function (d) { return d.rcn; });
+
+  var byFunding = facts.dimension(function (d) { return d.funding; });
 
   var byCountry = facts.dimension(function(d) { return d.leaderCountry; });
   var byCountryGroup = byCountry.group().reduce(
@@ -99,6 +104,30 @@ d3.json("projects.json", function(error, data) {
       }
     }
   );
+
+  var byStartDate = facts.dimension(function (d) { return d3.time.month(d.date); });
+  var byStartDateGroup = byStartDate.group(d3.time.month);
+
+  var byEndDate = facts.dimension(function (d) { return d3.time.month(d.end_date); });
+  var byEndDateGroup = byEndDate.group(d3.time.month);
+
+  var byPartners = facts.dimension(function (d) { return d.participants.length; });
+  var byPartnersGroup = byPartners.group();
+
+  // Full overview
+  dc.dataCount(".dc-data-count")
+    .dimension(facts)
+    .group(all);
+
+  dc.numberDisplay(".dc-total-funding")
+    .group(fundingGroup)
+    .valueAccessor(function (d) { return d; })
+    .formatNumber(function (d) { return formatEuro(d);} );
+
+  // dc.numberDisplay(".dc-total-countries")
+  //   .group(countriesGroup)
+  //   .valueAccessor(function (d) { console.log(d); return d.value; });
+  //   // .formatNumber(function (d) { return formatEuro(d);} );
 
   // The charts
   bubbleChart
@@ -129,8 +158,8 @@ d3.json("projects.json", function(error, data) {
     .elasticRadius(true)
     .elasticY(true)
     .elasticX(true)
-    .yAxisPadding("10%")
-    .xAxisPadding("15%")
+    .yAxisPadding("15%")
+    .xAxisPadding("18%")
     .xAxisLabel('Total number of projects')
     .yAxisLabel('Average number of partners')
     .label(function (p) {
@@ -145,28 +174,75 @@ d3.json("projects.json", function(error, data) {
         + "Average number of partners: " + formatEuro(p.value.avgPartners) + "\n";
     })
     .renderLabel(true)
-    .renderTitle(true)
-    .renderlet(function (chart) {
-      // console.log(chart);
-      // rowChart.filter(chart.filter());
-    })
-    .on("postRedraw", function (chart) {
-      // renderAll();
-      // console.log("POST REDRAW");
-            // console.log(chart);
-      // dc.events.trigger(function () {
-      //   rowChart.filter(chart.filter());
-      // });
-    });
+    .renderTitle(true);
+    // .renderlet(function (chart) {
+    //   // console.log(facts.groupAll().reduceSum(function(d) { return d.funding; }).value());
+    //   // console.log('chart');
+    //   // rowChart.filter(chart.filter());
+    // })
+    // .on("postRedraw", function (chart) {
+    //   // renderAll();
+    //   // console.log("POST REDRAW");
+    //         // console.log(chart);
+    //   // dc.events.trigger(function () {
+    //   //   rowChart.filter(chart.filter());
+    //   // });
+    // });
 
   // Format values on the X axis
   // bubbleChart.xAxis().tickFormat(function (s) {
   //   return formatNumberPrefix(s);
   // });
   
+
+  startChart.width(850)
+    .height(120)
+    .dimension(byStartDate)
+    .group(byStartDateGroup)
+    .transitionDuration(500)
+    .centerBar(true)
+    .gap(2)
+    // .filter([new Date(2006, 1, 1), new Date(2020, 2, 1)])
+    .x(d3.time.scale()
+        .domain([new Date(2006, 0, 1), new Date(2020, 3, 1)])
+        .rangeRound([0, 10 * 90]))
+    .yAxisLabel("Projects")
+    .elasticY(true)
+    .yAxis().ticks(0);
+  
+  endChart.width(850)
+    .height(120)
+    .dimension(byEndDate)
+    .group(byEndDateGroup)
+    .transitionDuration(500)
+    .centerBar(true)
+    // .gap(1)
+    .barPadding(-0.9)
+    .outerPadding(0.05)
+    // .filter([new Date(2006, 1, 1), new Date(2020, 2, 1)])
+    .x(d3.time.scale()
+        .domain([new Date(2006, 0, 1), new Date(2020, 3, 1)])
+        .rangeRound([0, 10 * 90]))
+    .yAxisLabel("Projects")
+    .elasticY(true)
+    .yAxis().ticks(0);
+
+  partnersChart
+    .height(400)
+    .width(400)
+    .radius(160)
+    .renderLabel(true)
+    .minAngleForLabel(0.1)
+    .colors(d3.scale.category20c())
+    .dimension(byPartners)
+    .group(byPartnersGroup)
+    // .externalLabels(1)
+    // .slicesCap(8)
+    .transitionDuration(500);
+   
   dataTable.width(960)
     .height(800)
-    .dimension(byRCN)
+    .dimension(byFunding)
     .group(function(d) { return ''; })
     .size(50)
     .columns([
