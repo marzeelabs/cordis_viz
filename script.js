@@ -4,6 +4,7 @@ var dataTable = dc.dataTable("#dc-table-graph");
 var startChart = dc.barChart("#dc-start-chart");
 var endChart = dc.barChart("#dc-end-chart");
 var partnersChart = dc.pieChart("#dc-partners-chart");
+var fundingChart = dc.lineChart("#dc-funding-chart");
 
 // d3.json("projects.json", function(error, data) {
 // d3.json("projects_1000.json", function(error, data) {
@@ -37,6 +38,10 @@ d3.json("projects_all.json", function(error, data) {
     return formatPartnerSlices(d) + ': ' + d.value + ' projects'; 
   }
 
+  var formatCordisUrl = function(rcn) {
+    return 'http://cordis.europa.eu/projects/rcn/' + rcn.toString() + '_en.html';
+  }
+
   // A nest operator, for grouping the project list.
   var nestByDate = d3.nest()
       .key(function(d) {
@@ -60,7 +65,7 @@ d3.json("projects_all.json", function(error, data) {
         d.lat = d.participants[0].lat;
         d.lon = d.participants[0].lon;
       }
-    }  else {
+    } else {
       d.leaderCountry = 'unknown';
     }
 
@@ -82,7 +87,7 @@ d3.json("projects_all.json", function(error, data) {
   // Dimensions needed
   var byRCN = facts.dimension(function (d) { return d.rcn; });
 
-  var byFunding = facts.dimension(function (d) { return d.funding; });
+  var byFundingTable = facts.dimension(function (d) { return d.funding; });
 
   var byCountry = facts.dimension(function(d) { return d.leaderCountry; });
   var byCountryGroup = byCountry.group().reduce(
@@ -116,6 +121,30 @@ d3.json("projects_all.json", function(error, data) {
   var byEndDate = facts.dimension(function (d) { return d3.time.month(d.end_date); });
   var byEndDateGroup = byEndDate.group(d3.time.month);
 
+  var byFunding = facts.dimension(function (d) {
+    // return d.funding;
+    var f = d.funding / 100000;
+
+    if (f >= 40) {
+      return 40;
+    } else {
+      return d3.round(f);
+    }
+    // return d3.round(d.funding / 100000);
+
+    var l = d3.scale.threshold().domain([1000000,2000000,3000000,4000000]).range(["1", "2", "3", "4"]);
+
+    return l(d.funding);
+    // if (d.funding > 4000000) {
+    //   return 1;
+    // } else {
+    //   return 0;
+    // }
+    // return d.funding; 
+  });
+  var byFundingGroup = byFunding.group();
+  console.log(byFundingGroup.top(5));
+
   var byPartners = facts.dimension(function (d) {
     var length = d.participants.length;
     if (length == 1) {
@@ -125,7 +154,6 @@ d3.json("projects_all.json", function(error, data) {
     } else {
       return 6;
     }
-    // return d.participants.length;
   });
   var byPartnersGroup = byPartners.group();
 
@@ -209,6 +237,30 @@ d3.json("projects_all.json", function(error, data) {
   //   return formatNumberPrefix(s);
   // });
   
+  fundingChart.width(850)
+    .height(200)
+    .dimension(byFunding)
+    .group(byFundingGroup)
+    .x(d3.scale.linear().domain([0,41]))
+    // .x(d3.scale.linear().domain([0,50]))
+    .renderArea(true)
+    .elasticY(true)
+    .filterPrinter(function (filters) {
+      var filter = filters[0], s = "";
+      s += formatEuro(filter[0]*100000) + " -> " + formatEuro(filter[1]*100000);
+      return s;
+    })
+    .transitionDuration(transitionDuration);
+  fundingChart.yAxis().ticks(0);
+  fundingChart.xAxis().tickFormat(function (d) {
+    return formatEuro(d*100000);
+  });
+
+  var dateFilter = function(filters) {
+    var filter = filters[0], s = "";
+    s += formatMonth(filter[0]) + " -> " + formatMonth(filter[1]);
+    return s;
+  }
 
   startChart.width(850)
     .height(120)
@@ -217,6 +269,7 @@ d3.json("projects_all.json", function(error, data) {
     .transitionDuration(transitionDuration)
     .centerBar(true)
     .gap(2)
+    .filterPrinter(dateFilter)
     // .filter([new Date(2006, 1, 1), new Date(2020, 2, 1)])
     .x(d3.time.scale()
         .domain([new Date(2006, 0, 1), new Date(2020, 3, 1)])
@@ -230,6 +283,7 @@ d3.json("projects_all.json", function(error, data) {
     .dimension(byEndDate)
     .group(byEndDateGroup)
     .transitionDuration(transitionDuration)
+    .filterPrinter(dateFilter)
     .centerBar(true)
     // .gap(1)
     .barPadding(-0.9)
@@ -258,16 +312,23 @@ d3.json("projects_all.json", function(error, data) {
    
   dataTable.width(960)
     .height(800)
-    .dimension(byFunding)
+    .dimension(byFundingTable)
     .group(function(d) { return ''; })
     .size(50)
     .columns([
-      function(d) { return '<a href="' + d.url + '" target="_blank">' + d.project_acronym + '</a>'; },
+      function(d) { 
+        var output = '<a href="' + formatCordisUrl(d.rcn) + '" target="_blank">' + d.project_acronym + '</a>';
+        output += '<br/><small>' + d.title + '</small> ';
+        if (d.project_website != '') {
+          output += '<small><a href="' + d.project_website + '"target="_blank">' + d.project_website + '</a>';
+        }
+        return output;
+      },
       function(d) { return d.leaderCountry; },
       function(d) { return formatMonth(d.date); },
       function(d) { return formatMonth(d.end_date); },
-      function(d) { return d.rcn; },
-      function(d) { return formatEuro(d.funding); }
+      function(d) { return formatEuro(d.funding); },
+      function(d) { return d.rcn + '<br><small>' + '<a href="' + d.url + '" target="_blank">view on OC</a></small>'; }
     ])
     .sortBy(function(d) { return d.funding; })
     .order(d3.descending);
