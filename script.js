@@ -10,16 +10,29 @@ var n = this,
    return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
 };
 
-d3.json("projects.json", function(error, projects) {
-// d3.json("projects_1000.json", function(error, projects) {
-// d3.json("projects_all.json", function(error, projects) {
+// Our dimensional charts
+var bubbleChart = dc.bubbleChart('#dc-bubble');
+var dataTable = dc.dataTable("#dc-table-graph");
+var startChart = dc.barChart("#dc-start-chart");
+var endChart = dc.barChart("#dc-end-chart");
+var partnersChart = dc.pieChart("#dc-partners-chart");
+
+// d3.json("projects.json", function(error, data) {
+// d3.json("projects_1000.json", function(error, data) {
+d3.json("projects_all.json", function(error, data) {
 
   // Various formatters.
   var formatNumber = d3.format(",d"),
       formatChange = d3.format("+,d"),
       formatMonth = d3.time.format("%B %Y"),
       formatDate = d3.time.format("%B %d, %Y"),
-      formatTime = d3.time.format("%I:%M %p");
+      formatTime = d3.time.format("%I:%M %p"),
+      formatNumberPrefix = d3.format(".2s");
+
+  var formatEuro = function(val) { 
+    var si = d3.format(".2s");
+    return si(val).replace(/G/, 'B');
+  };
 
   // A nest operator, for grouping the project list.
   var nestByDate = d3.nest()
@@ -27,13 +40,14 @@ d3.json("projects.json", function(error, projects) {
         return d3.time.month(d.date); 
       });
 
-  // A little coercion, since the JSON is untyped.
-  projects.forEach(function(d, i) {
+  // A little coercion, since the JSON is untyped. Also do some more data processing
+  // to get everything ready for the crossfilter.
+  data.forEach(function(d, i) {
     d.index = i;
     d.date = new Date(d.start_date * 1000);
     d.end_date = new Date(d.end_date * 1000);
 
-
+    // Extract the leader country, this will used all over
     if (d.participants[0] && d.participants[0].country) {
       d.leaderCountry = d.participants[0].country;
 
@@ -41,526 +55,208 @@ d3.json("projects.json", function(error, projects) {
         d.lat = d.participants[0].lat;
         d.lon = d.participants[0].lon;
       }
-
     }  else {
       d.leaderCountry = 'unknown';
     }
 
-    d.funding = parseInt(d.funding);
-    d.cost = parseInt(d.cost);
+    d.funding = +d.funding;
+    d.cost = +d.cost;
+    d.rcn = +d.rcn;
   });
 
+
   // Create the crossfilter for the relevant dimensions and groups.
-  var project = crossfilter(projects);
-  var all = project.groupAll();
-      
-  var date = project.dimension(function(d) { return d.date; });
-  var dates = date.group(d3.time.day);
-      
-  var end_date = project.dimension(function(d) { return d.end_date; });
-  var end_dates = end_date.group(d3.time.day);
-
-  var index = project.dimension(function(d) { return d.rcn; });
-
-  var byFunding = project.dimension(function (d) { return d.funding; });
-
-  var byCountry = project.dimension(function(d) { return d.leaderCountry; });
-  var byCountry2 = project.dimension(function(d) { return d.leaderCountry; });
-
-  // var byLocation = project.dimension(function(d) { 
-  //   if ('lat' in d) {
-  //     return [d.lat, d.lon];
-  //   } else {
-  //     return [0,0];
-  //   }
-  // });
-
-  var byProjectCall = project.dimension(function (d) { return d.project_call; });
-
-  var charts = [
-
-    barChart()
-        .dimension(date)
-        .group(dates)
-        .round(d3.time.day.round)
-      .x(d3.time.scale()
-        .domain([new Date(2006, 0, 1), new Date(2020, 3, 1)])
-        .rangeRound([0, 10 * 90]))
-        .filter([new Date(2006, 1, 1), new Date(2020, 2, 1)]),
-
-    barChart()
-        .dimension(end_date)
-        .group(end_dates)
-        .round(d3.time.day.round)
-      .x(d3.time.scale()
-        .domain([new Date(2006, 0, 1), new Date(2020, 3, 1)])
-        .rangeRound([0, 10 * 90]))
-        .filter([new Date(2006, 1, 1), new Date(2020, 2, 1)])
-  ];
-
-  // The map
-  var map = new L.Map("map", {center: [48, 9], zoom: 3})
-    .addLayer(new L.TileLayer("http://{s}.tile.cloudmade.com/{key}/997/256/{z}/{x}/{y}.png", {
-      attribution: '<b>Developed by <a href="http://openconsortium.eu/" target="_blank" class="oc-logo">Open Consortium</a>.</b> Map data &copy; 2011 OpenStreetMap contributors, Imagery &copy; 2011 CloudMade',
-      // key: '03d33ad133d34ae39b3990819a502f17',
-      key: 'c8744de7fa7944169afa48842c7fcbdb',
-      // styleId: 22677
-      // styleId: 997,
-      maxZoom: 18,
-    }));
-
-  var markers = L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40});
-  var markers_list = {};
-  map.addLayer(markers);
-
-  // Given our array of charts, which we assume are in the same order as the
-  // .chart elements in the DOM, bind the charts to the DOM and render them.
-  // We also listen to the chart's brush events to update the display.
-  var chart = d3.selectAll(".chart")
-      .data(charts)
-      .each(function(chart) { chart.on("brush", renderAll).on("brushend", renderAll); });
-
-  // Render the initial lists.
-  var list = d3.selectAll("#project-list")
-      .data([projectList]);
-
-  // Render the initial country list
-  var listCountries = d3.select("#country-list")
-      .data([countryList]);
-
-  var listProjectCalls = d3.select('#project-calls-list')
-    .data([projectCallList]);
-
-  // Render the total.
-  d3.selectAll("#total")
-      .text(formatNumber(project.size()));
-
-  renderAll();
-
-  // Renders the specified chart or list.
-  function render(method) {
-    d3.select(this).call(method);
-  }
-
-  // Whenever the brush moves, re-rendering everything.
-  function renderAll() {
-    chart.each(render);
-    list.each(render);
-    listCountries.each(render);
-    listProjectCalls.each(render);
-    mapData();
-
-    // Update counts
-    d3.select("#active").text(formatNumber(all.value()));
-    d3.select("#total-funding").text(project.groupAll().reduceSum(function(d) { return d.funding; }).value().formatMoney(0));
-
-    countries = 0;
-    byCountry2.group().top(Infinity).forEach(function(d) {
-      if (d.value > 0) {
-        countries++;
-      } 
-    });
-    d3.select("#total-countries").text(countries);
-  }
-
-  function dateMonthDifference(d1, d2) {
-    return d2.getMonth() - d1.getMonth() + 
-            (12 * (d2.getFullYear() - d1.getFullYear()));
-  }
-
-  window.filter = function(filters) {
-    filters.forEach(function(d, i) { charts[i].filter(d); });
-    renderAll();
-  };
-
-  // This gets triggered by the country click and reduces data
-  window.filterCountry = function(country) {
-    byCountry.filter(country);
-    renderAll();
-  };
-
-  window.filterProjectCall = function(call) {
-    byProjectCall.filter(call);
-    renderAll();
-  }
-
-  window.reset = function(i) {
-    charts[i].filter(null);
-    renderAll();
-  };
-
-  // window.resetAll = function() {
-  //   charts.each(filter(null));
-  // }
-
-  window.showModal = function(rcn) {
-    index.filter(rcn);
-    index.top(Infinity).forEach(function(p,i) {
-      d3.select('#datapointevent').text(p.title);
-    });
-    index.filterAll(null);
-    $('#myModal').modal('toggle');
-    window.history.replaceState("", "title", "?rcn="+rcn);
-
-  };
-
-  function mapData() {
-    markers.clearLayers();
-
-    byFunding.top(50).forEach(function(d, i) {
-      leader = d.participants[0];
-      if (leader && 'lat' in leader && 'lon' in leader) {
-        var marker = L.marker([leader.lat, leader.lon]);
-        markers.addLayer(marker);
-      }
-    });
-
-    map.fitBounds(markers);
-  }
-
-  // // Filter data on cluster click
-  // markers.on('clusterclick', function (a) {
-  //   // console.log(a);
-
-  //   selected = a.layer.getAllChildMarkers();
-  //   // console.log(selected);
-  //   // 
-    
-
-  //     selected.forEach(function (k) {
-  //       console.log(k);
-  //     });
-
-
-
-
-  //   byLocation.filterFunction(function (d) {
-  //     // console.log(d);
-  //     // for
-  //     // 
-      
-
-  //     // for (var k in selsected) {
-  //       // if (d.lat = )
-  //     // }
-  //   });
-  // });
-
-  function countryList(div) {
-    div.each(function() {
-
-      console.log(d3.select(this).selectAll(".country"));
-
-      var countries = d3.select(this).selectAll(".country")
-        .data(byCountry2.group().top(Infinity), function(d) {
-          // Only consider valid groups 
-          if (d.key == 'IL') {
-            return d.key;
-          } else {
-            return -1;
-          }        
-      });
-
-      var countriesEnter = countries.enter()
-        .append("li")
-        .attr("class", "country")
-        .append("a")
-        .attr("class", "title")
-        .attr('href', '#')
-        .attr('onclick', function(d) { 
-          return ("javascript:filterCountry('"+d.key+"');return false;"); 
-        })
-        .text(function(d) { return d.key+" ("+d.value+")"; });
-
-      countries.exit().remove();
-      countries.order();
-
-      // Add support for list search & pagination
-      var list = new List('country-list-wrapper', {
-        valueNames: [ 'title' ],
-        page: 10,
-        plugins: [ ListPagination({})]
-      });
-
-    });
-  }
-
-  function projectCallList(div) {
-    div.each(function() {
-      var projectCalls = d3.select(this).selectAll(".project-call")
-        .data(byProjectCall.group().top(Infinity), function(d) {
-          return d.key;
-      });
-
-      var enter = projectCalls.enter()
-        .append("li")
-        .attr("class", "project-call")
-        .append("a")
-        .attr("class", "title")
-        .attr('href', '#')
-        .attr('onclick', function(d) { 
-          return ("javascript:filterProjectCall('"+d.key+"');return false;"); 
-        })
-        .text(function(d) { return d.key+" ("+d.value+")"; });
-
-      projectCalls.exit().remove();
-      projectCalls.order();
-
-      // Add support for list search & pagination
-      var list = new List('project-calls-list-wrapper', {
-        valueNames: [ 'title' ],
-        page: 10,
-        plugins: [ ListPagination({})]
-      });
-
-
-    });    
-  }
-
-  function projectList(div) {
-    var projectsByDate = nestByDate.entries(date.top(50));
-
-    div.each(function() {
-
-      // console.log(d3.select(this).selectAll(".date"));
-
-
-      var date = d3.select(this).selectAll(".date")
-          .data(projectsByDate, function(d) { return d.key; });
-
-      date.enter()
-        .append("div")
-        .attr("class", "date")
-        .append("div")
-        .attr("class", "day")
-        .text(function(d) { return formatMonth(d.values[0].date); });
-
-      date.exit().remove();
-
-      // var project = date.order().selectAll(".flight")
-      //     .data(function(d) { return d.values; }, function(d) { return d.index; });
-
-      // var projectEnter = project.enter().append("div")
-      //     .attr("class", "flight");
-
-      // projectEnter.append("div")
-      //     .attr("class", "acronym")
-      //     .append("a")
-      //     // .attr("href", function(d) { return ("?rcn=" + d.rcn); })
-      //     .attr("onclick",function(d) { return ("javascript:showModal('"+d.rcn+"'); return false;"); })
-      //     .text(function(d) { return d.project_acronym; });
-
-      // projectEnter.append("div")
-      //     .attr("class", "project-call")
-      //     .text(function(d) { return d.project_call; });
-
-      // projectEnter.append("div")
-      //     .attr("class", "funding")
-      //     .text(function(d) {
-      //       // var formatCurrency = d3.format("$,.0f");
-      //       // return formatCurrency(d.funding);
-      //       return (d.funding.formatMoney(0)); 
-      //     });
-
-      // projectEnter.append("div")
-      //     .attr('class', 'duration')
-      //     .text(function(d) { return dateMonthDifference(d.date, d.end_date); });
-
-      // project.exit().remove();
-
-      // project.order();
-    });
-  }
-
-  function barChart() {
-    if (!barChart.id) barChart.id = 0;
-
-    var margin = {top: 10, right: 10, bottom: 20, left: 10},
-        x,
-        y = d3.scale.linear().range([100, 0]),
-        id = barChart.id++,
-        axis = d3.svg.axis().orient("bottom"),
-        brush = d3.svg.brush(),
-        brushDirty,
-        dimension,
-        group,
-        round;
-
-    function chart(div) {
-      var width = x.range()[1],
-          height = y.range()[0];
-
-      y.domain([0, group.top(1)[0].value]);
-
-      div.each(function() {
-        var div = d3.select(this),
-            g = div.select("g");
-
-        // Create the skeletal chart.
-        if (g.empty()) {
-          div.select(".title").append("a")
-              .attr("href", "javascript:reset(" + id + ")")
-              .attr("class", "reset")
-              .text("reset")
-              .style("display", "none");
-
-          g = div.append("svg")
-              .attr("width", width + margin.left + margin.right)
-              .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-              .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-          g.append("clipPath")
-              .attr("id", "clip-" + id)
-            .append("rect")
-              .attr("width", width)
-              .attr("height", height);
-
-          g.selectAll(".bar")
-              .data(["background", "foreground"])
-            .enter().append("path")
-              .attr("class", function(d) { return d + " bar"; })
-              .datum(group.all());
-
-          g.selectAll(".foreground.bar")
-              .attr("clip-path", "url(#clip-" + id + ")");
-
-          g.append("g")
-              .attr("class", "axis")
-              .attr("transform", "translate(0," + height + ")")
-              .call(axis);
-
-          // Initialize the brush component with pretty resize handles.
-          var gBrush = g.append("g").attr("class", "brush").call(brush);
-          gBrush.selectAll("rect").attr("height", height);
-          gBrush.selectAll(".resize").append("path").attr("d", resizePath);
-        }
-
-        // Only redraw the brush if set externally.
-        if (brushDirty) {
-          brushDirty = false;
-          g.selectAll(".brush").call(brush);
-          div.select(".title a").style("display", brush.empty() ? "none" : null);
-          if (brush.empty()) {
-            g.selectAll("#clip-" + id + " rect")
-                .attr("x", 0)
-                .attr("width", width);
-          } else {
-            var extent = brush.extent();
-            g.selectAll("#clip-" + id + " rect")
-                .attr("x", x(extent[0]))
-                .attr("width", x(extent[1]) - x(extent[0]));
-          }
-        }
-
-        g.selectAll(".bar").attr("d", barPath);
-      });
-
-      function barPath(groups) {
-        var path = [],
-            i = -1,
-            n = groups.length,
-            d;
-        while (++i < n) {
-          d = groups[i];
-          path.push("M", x(d.key), ",", height, "V", y(d.value), "h9V", height);
-        }
-        return path.join("");
-      }
-
-      function resizePath(d) {
-        var e = +(d == "e"),
-            x = e ? 1 : -1,
-            y = height / 3;
-        return "M" + (.5 * x) + "," + y
-            + "A6,6 0 0 " + e + " " + (6.5 * x) + "," + (y + 6)
-            + "V" + (2 * y - 6)
-            + "A6,6 0 0 " + e + " " + (.5 * x) + "," + (2 * y)
-            + "Z"
-            + "M" + (2.5 * x) + "," + (y + 8)
-            + "V" + (2 * y - 8)
-            + "M" + (4.5 * x) + "," + (y + 8)
-            + "V" + (2 * y - 8);
+  var facts = crossfilter(data);
+  var all = facts.groupAll();
+
+  var fundingGroup = facts.groupAll().reduceSum(function(d) { return d.funding; });
+
+  // var countriesDimension = facts.dimension(function(d) { return d.leaderCountry; });
+  // var countriesGroup = countriesDimension.group().reduceSum(function(d) { return 1; });
+
+  // Dimensions needed
+  var byRCN = facts.dimension(function (d) { return d.rcn; });
+
+  var byFunding = facts.dimension(function (d) { return d.funding; });
+
+  var byCountry = facts.dimension(function(d) { return d.leaderCountry; });
+  var byCountryGroup = byCountry.group().reduce(
+    function (p,v) {
+      ++p.totalProjects;
+      p.totalFunding += v.funding;
+      p.totalPartners += v.participants.length;
+      p.avgPartners = p.totalPartners / p.totalProjects;
+      return p;
+    },
+    function (p,v) {
+      --p.totalProjects;
+      p.totalFunding -= v.funding;
+      p.totalPartners -= v.participants.length;
+      p.avgPartners = p.totalPartners / p.totalProjects;
+      return p;
+    },
+    function () {
+      return {
+        totalProjects: 0,
+        totalFunding: 0,
+        totalPartners: 0,
+        avgPartners: 0,
       }
     }
+  );
 
-    brush.on("brushstart.chart", function() {
-      var div = d3.select(this.parentNode.parentNode.parentNode);
-      div.select(".title a").style("display", null);
-    });
+  var byStartDate = facts.dimension(function (d) { return d3.time.month(d.date); });
+  var byStartDateGroup = byStartDate.group(d3.time.month);
 
-    brush.on("brush.chart", function() {
-      var g = d3.select(this.parentNode),
-          extent = brush.extent();
-      if (round) g.select(".brush")
-          .call(brush.extent(extent = extent.map(round)))
-        .selectAll(".resize")
-          .style("display", null);
-      g.select("#clip-" + id + " rect")
-          .attr("x", x(extent[0]))
-          .attr("width", x(extent[1]) - x(extent[0]));
-      dimension.filterRange(extent);
-    });
+  var byEndDate = facts.dimension(function (d) { return d3.time.month(d.end_date); });
+  var byEndDateGroup = byEndDate.group(d3.time.month);
 
-    brush.on("brushend.chart", function() {
-      if (brush.empty()) {
-        var div = d3.select(this.parentNode.parentNode.parentNode);
-        div.select(".title a").style("display", "none");
-        div.select("#clip-" + id + " rect").attr("x", null).attr("width", "100%");
-        dimension.filterAll();
-      }
-    });
+  var byPartners = facts.dimension(function (d) { return d.participants.length; });
+  var byPartnersGroup = byPartners.group();
 
-    chart.margin = function(_) {
-      if (!arguments.length) return margin;
-      margin = _;
-      return chart;
-    };
+  // Full overview
+  dc.dataCount(".dc-data-count")
+    .dimension(facts)
+    .group(all);
 
-    chart.x = function(_) {
-      if (!arguments.length) return x;
-      x = _;
-      axis.scale(x);
-      brush.x(x);
-      return chart;
-    };
+  dc.numberDisplay(".dc-total-funding")
+    .group(fundingGroup)
+    .valueAccessor(function (d) { return d; })
+    .formatNumber(function (d) { return formatEuro(d);} );
 
-    chart.y = function(_) {
-      if (!arguments.length) return y;
-      y = _;
-      return chart;
-    };
+  // dc.numberDisplay(".dc-total-countries")
+  //   .group(countriesGroup)
+  //   .valueAccessor(function (d) { console.log(d); return d.value; });
+  //   // .formatNumber(function (d) { return formatEuro(d);} );
 
-    chart.dimension = function(_) {
-      if (!arguments.length) return dimension;
-      dimension = _;
-      return chart;
-    };
+  // The charts
+  bubbleChart
+    .width(850)
+    .height(500)
+    .dimension(byCountry)
+    .group(byCountryGroup)
+    .transitionDuration(1500)
+    .colors(d3.scale.category10())
+    .x(d3.scale.linear())
+    .y(d3.scale.linear())
+    .maxBubbleRelativeSize(0.15)
+    .keyAccessor(function (p) {
+      // X axis
+      return p.value.totalProjects;
+    })
+    .valueAccessor(function (p) {
+      // Y axis
+      return p.value.avgPartners;
+    })
+    .radiusValueAccessor(function (p) {
+      return p.value.totalFunding;
+    })
+    .colorAccessor(function (p) {
+      return p.value.totalFunding;
+    })
+    .transitionDuration(1500)
+    .elasticRadius(true)
+    .elasticY(true)
+    .elasticX(true)
+    .yAxisPadding("15%")
+    .xAxisPadding("18%")
+    .xAxisLabel('Total number of projects')
+    .yAxisLabel('Average number of partners')
+    .label(function (p) {
+      return p.key;
+    })
+    .title(function (p) {
+      var numberFormat = d3.format("$.2r");
+      return p.key 
+        + "\n" 
+        + "Total projects: " + p.value.totalProjects + "\n" 
+        + "Total funding: " + formatEuro(p.value.totalFunding) + "\n"
+        + "Average number of partners: " + formatEuro(p.value.avgPartners) + "\n";
+    })
+    .renderLabel(true)
+    .renderTitle(true);
+    // .renderlet(function (chart) {
+    //   // console.log(facts.groupAll().reduceSum(function(d) { return d.funding; }).value());
+    //   // console.log('chart');
+    //   // rowChart.filter(chart.filter());
+    // })
+    // .on("postRedraw", function (chart) {
+    //   // renderAll();
+    //   // console.log("POST REDRAW");
+    //         // console.log(chart);
+    //   // dc.events.trigger(function () {
+    //   //   rowChart.filter(chart.filter());
+    //   // });
+    // });
 
-    chart.filter = function(_) {
-      if (_) {
-        brush.extent(_);
-        dimension.filterRange(_);
-      } else {
-        brush.clear();
-        dimension.filterAll();
-      }
-      brushDirty = true;
-      return chart;
-    };
+  // Format values on the X axis
+  // bubbleChart.xAxis().tickFormat(function (s) {
+  //   return formatNumberPrefix(s);
+  // });
+  
 
-    chart.group = function(_) {
-      if (!arguments.length) return group;
-      group = _;
-      return chart;
-    };
+  startChart.width(850)
+    .height(120)
+    .dimension(byStartDate)
+    .group(byStartDateGroup)
+    .transitionDuration(500)
+    .centerBar(true)
+    .gap(2)
+    // .filter([new Date(2006, 1, 1), new Date(2020, 2, 1)])
+    .x(d3.time.scale()
+        .domain([new Date(2006, 0, 1), new Date(2020, 3, 1)])
+        .rangeRound([0, 10 * 90]))
+    .yAxisLabel("Projects")
+    .elasticY(true)
+    .yAxis().ticks(0);
+  
+  endChart.width(850)
+    .height(120)
+    .dimension(byEndDate)
+    .group(byEndDateGroup)
+    .transitionDuration(500)
+    .centerBar(true)
+    // .gap(1)
+    .barPadding(-0.9)
+    .outerPadding(0.05)
+    // .filter([new Date(2006, 1, 1), new Date(2020, 2, 1)])
+    .x(d3.time.scale()
+        .domain([new Date(2006, 0, 1), new Date(2020, 3, 1)])
+        .rangeRound([0, 10 * 90]))
+    .yAxisLabel("Projects")
+    .elasticY(true)
+    .yAxis().ticks(0);
 
-    chart.round = function(_) {
-      if (!arguments.length) return round;
-      round = _;
-      return chart;
-    };
+  partnersChart
+    .height(400)
+    .width(400)
+    .radius(160)
+    .renderLabel(true)
+    .minAngleForLabel(0.1)
+    .colors(d3.scale.category20c())
+    .dimension(byPartners)
+    .group(byPartnersGroup)
+    // .externalLabels(1)
+    // .slicesCap(8)
+    .transitionDuration(500);
+   
+  dataTable.width(960)
+    .height(800)
+    .dimension(byFunding)
+    .group(function(d) { return ''; })
+    .size(50)
+    .columns([
+      function(d) { return '<a href="' + d.url + '" target="_blank">' + d.project_acronym + '</a>'; },
+      function(d) { return d.leaderCountry; },
+      function(d) { return formatMonth(d.date); },
+      function(d) { return formatMonth(d.end_date); },
+      function(d) { return d.rcn; },
+      function(d) { return formatEuro(d.funding); }
+    ])
+    .sortBy(function(d) { return d.funding; })
+    .order(d3.descending);
 
-    return d3.rebind(chart, brush, "on");
-  }
+  // Render all!
+  dc.renderAll();
+
 });
