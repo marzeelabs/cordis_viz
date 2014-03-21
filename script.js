@@ -43,6 +43,8 @@ d3.json("projects_all.json", function(error, data) {
         return d3.time.month(d.date); 
       });
 
+  var transitionDuration = 500;
+
   // A little coercion, since the JSON is untyped. Also do some more data processing
   // to get everything ready for the crossfilter.
   data.forEach(function(d, i) {
@@ -148,7 +150,7 @@ d3.json("projects_all.json", function(error, data) {
     .height(500)
     .dimension(byCountry)
     .group(byCountryGroup)
-    .transitionDuration(1500)
+    .transitionDuration(transitionDuration)
     .colors(d3.scale.category10())
     .x(d3.scale.linear())
     .y(d3.scale.linear())
@@ -167,7 +169,7 @@ d3.json("projects_all.json", function(error, data) {
     .colorAccessor(function (p) {
       return p.value.totalFunding;
     })
-    .transitionDuration(1500)
+    .transitionDuration(transitionDuration)
     .elasticRadius(true)
     .elasticY(true)
     .elasticX(true)
@@ -212,7 +214,7 @@ d3.json("projects_all.json", function(error, data) {
     .height(120)
     .dimension(byStartDate)
     .group(byStartDateGroup)
-    .transitionDuration(500)
+    .transitionDuration(transitionDuration)
     .centerBar(true)
     .gap(2)
     // .filter([new Date(2006, 1, 1), new Date(2020, 2, 1)])
@@ -227,7 +229,7 @@ d3.json("projects_all.json", function(error, data) {
     .height(120)
     .dimension(byEndDate)
     .group(byEndDateGroup)
-    .transitionDuration(500)
+    .transitionDuration(transitionDuration)
     .centerBar(true)
     // .gap(1)
     .barPadding(-0.9)
@@ -244,6 +246,7 @@ d3.json("projects_all.json", function(error, data) {
     .height(200)
     .width(200)
     .radius(65)
+    .transitionDuration(transitionDuration)
     .renderLabel(true)
     .minAngleForLabel(0.1)
     .label(formatPartnerSlices)
