@@ -1,15 +1,3 @@
-// http://stackoverflow.com/questions/149055/how-can-i-format-numbers-as-money-in-javascript
-Number.prototype.formatMoney = function(c, d, t){
-var n = this, 
-    c = isNaN(c = Math.abs(c)) ? 2 : c, 
-    d = d == undefined ? "," : d, 
-    t = t == undefined ? "." : t, 
-    s = n < 0 ? "-" : "", 
-    i = parseInt(n = Math.abs(+n || 0).toFixed(c)) + "", 
-    j = (j = i.length) > 3 ? j % 3 : 0;
-   return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
-};
-
 // Our dimensional charts
 var bubbleChart = dc.bubbleChart('#dc-bubble');
 var dataTable = dc.dataTable("#dc-table-graph");
@@ -33,6 +21,21 @@ d3.json("projects_all.json", function(error, data) {
     var si = d3.format(".2s");
     return si(val).replace(/G/, 'B');
   };
+
+  var formatPartnerSlices = function(d) {
+    switch(d.key) {
+      case 1:
+        return d.key;
+      case 5:
+        return '2-5';
+      case 6:
+        return '5+';
+    }
+  }
+
+  var formatPartnerSliceTitles = function(d) {
+    return formatPartnerSlices(d) + ': ' + d.value + ' projects'; 
+  }
 
   // A nest operator, for grouping the project list.
   var nestByDate = d3.nest()
@@ -111,7 +114,17 @@ d3.json("projects_all.json", function(error, data) {
   var byEndDate = facts.dimension(function (d) { return d3.time.month(d.end_date); });
   var byEndDateGroup = byEndDate.group(d3.time.month);
 
-  var byPartners = facts.dimension(function (d) { return d.participants.length; });
+  var byPartners = facts.dimension(function (d) {
+    var length = d.participants.length;
+    if (length == 1) {
+      return 1;
+    } else if (length <= 5) {
+      return 5;
+    } else {
+      return 6;
+    }
+    // return d.participants.length;
+  });
   var byPartnersGroup = byPartners.group();
 
   // Full overview
@@ -228,16 +241,16 @@ d3.json("projects_all.json", function(error, data) {
     .yAxis().ticks(0);
 
   partnersChart
-    .height(400)
-    .width(400)
-    .radius(160)
+    .height(200)
+    .width(200)
+    .radius(65)
     .renderLabel(true)
     .minAngleForLabel(0.1)
+    .label(formatPartnerSlices)
+    .title(formatPartnerSliceTitles)
     .colors(d3.scale.category20c())
     .dimension(byPartners)
     .group(byPartnersGroup)
-    // .externalLabels(1)
-    // .slicesCap(8)
     .transitionDuration(500);
    
   dataTable.width(960)
