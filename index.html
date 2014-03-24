@@ -21,6 +21,16 @@
 <!-- Custom style -->
 <link rel="stylesheet" href="css/app.css" />
 
+<style>
+
+.dc-chart g.row text {
+    cursor: pointer;
+    fill: black;
+    font-size: 12px;
+}
+
+</style>
+
 </head>
 <body>
 <div id="body">
@@ -62,6 +72,17 @@
   </div>
 
   <div class="row">
+    <div id="dc-bubble-city">
+      <h4>Funding by coordinating city
+      <a class="reset" style="display:none;" href="javascript:bubbleChartCity.filterAll();dc.redrawAll();" >
+        reset
+      </a>
+      <span class="reset" style="display: none;">Current filter: <span class="filter"></span></span>
+    </h4>
+    </div>
+  </div>
+
+  <div class="row">
     <div id="dc-funding-chart">
       <h4>Funding
         <a class="reset" style="display:none;" href="javascript:fundingChart.filterAll();dc.redrawAll();" >
@@ -98,6 +119,16 @@
     <div id="dc-partners-chart">
       <h4>Number of partners
         <a class="reset" style="display:none;" href="javascript:partnersChart.filterAll();dc.redrawAll();" >
+          reset
+        </a>
+      </h4>
+    </div>
+  </div>
+
+  <div class="row">
+    <div id="dc-subject-chart">
+      <h4>Subject Index
+        <a class="reset" style="display:none;" href="javascript:subjectChart.filterAll();dc.redrawAll();" >
           reset
         </a>
       </h4>

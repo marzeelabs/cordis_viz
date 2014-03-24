@@ -1,14 +1,16 @@
 // Our dimensional charts
 var bubbleChart = dc.bubbleChart('#dc-bubble');
+// var bubbleChartCity = dc.bubbleChart('#dc-bubble-city');
 var dataTable = dc.dataTable("#dc-table-graph");
 var startChart = dc.barChart("#dc-start-chart");
 var endChart = dc.barChart("#dc-end-chart");
 var partnersChart = dc.pieChart("#dc-partners-chart");
 var fundingChart = dc.lineChart("#dc-funding-chart");
+var subjectChart = dc.rowChart('#dc-subject-chart');
 
 // d3.json("projects.json", function(error, data) {
-// d3.json("projects_1000.json", function(error, data) {
-d3.json("projects_all.json", function(error, data) {
+d3.json("projects_1000.json", function(error, data) {
+// d3.json("projects_all.json", function(error, data) {
 
   // Various formatters.
   var formatNumber = d3.format(",d"),
@@ -65,9 +67,20 @@ d3.json("projects_all.json", function(error, data) {
         d.lat = d.participants[0].lat;
         d.lon = d.participants[0].lon;
       }
+
+      // Extract the leading country+city
+      if (d.participants[0].name) {
+        d.leaderCity = d.leaderCountry + d.participants[0].name
+      } else {
+        d.leaderCity = 'unknown';
+      }
+
     } else {
       d.leaderCountry = 'unknown';
+      d.leaderCity = 'unknown';
     }
+
+    
 
     d.funding = +d.funding;
     d.cost = +d.cost;
@@ -115,6 +128,36 @@ d3.json("projects_all.json", function(error, data) {
     }
   );
 
+  var bySubject = facts.dimension(function(d) { return ('subject_index' in d && d.subject_index.length >= 1) ? d.subject_index[0] : 'unknown'; });
+  var bySubjectGroup = bySubject.group();
+
+  // var byCity = facts.dimension(function (d) { return d.leaderCountry + d.leaderCity; });
+  // var byCityGroup = byCity.group().reduce(
+  //   function (p,v) {
+  //     ++p.totalProjects;
+  //     p.totalFunding += v.funding;
+  //     p.totalPartners += v.participants.length;
+  //     p.avgPartners = p.totalPartners / p.totalProjects;
+  //     return p;
+  //   },
+  //   function (p,v) {
+  //     --p.totalProjects;
+  //     p.totalFunding -= v.funding;
+  //     p.totalPartners -= v.participants.length;
+  //     p.avgPartners = p.totalPartners / p.totalProjects;
+  //     return p;
+  //   },
+  //   function () {
+  //     return {
+  //       totalProjects: 0,
+  //       totalFunding: 0,
+  //       totalPartners: 0,
+  //       avgPartners: 0,
+  //     }
+  //   }
+  // );
+
+
   var byStartDate = facts.dimension(function (d) { return d3.time.month(d.date); });
   var byStartDateGroup = byStartDate.group(d3.time.month);
 
@@ -122,28 +165,15 @@ d3.json("projects_all.json", function(error, data) {
   var byEndDateGroup = byEndDate.group(d3.time.month);
 
   var byFunding = facts.dimension(function (d) {
-    // return d.funding;
+    // Categorize funding in batches
     var f = d.funding / 100000;
-
     if (f >= 40) {
       return 40;
     } else {
       return d3.round(f);
     }
-    // return d3.round(d.funding / 100000);
-
-    var l = d3.scale.threshold().domain([1000000,2000000,3000000,4000000]).range(["1", "2", "3", "4"]);
-
-    return l(d.funding);
-    // if (d.funding > 4000000) {
-    //   return 1;
-    // } else {
-    //   return 0;
-    // }
-    // return d.funding; 
   });
   var byFundingGroup = byFunding.group();
-  console.log(byFundingGroup.top(5));
 
   var byPartners = facts.dimension(function (d) {
     var length = d.participants.length;
@@ -156,6 +186,8 @@ d3.json("projects_all.json", function(error, data) {
     }
   });
   var byPartnersGroup = byPartners.group();
+
+
 
   // Full overview
   dc.dataCount(".dc-data-count")
@@ -237,6 +269,52 @@ d3.json("projects_all.json", function(error, data) {
   //   return formatNumberPrefix(s);
   // });
   
+  // bubbleChartCity
+  //   .width(850)
+  //   .height(500)
+  //   .dimension(byCity)
+  //   .group(byCityGroup)
+  //   .transitionDuration(transitionDuration)
+  //   .colors(d3.scale.category10())
+  //   .x(d3.scale.linear())
+  //   .y(d3.scale.linear())
+  //   .maxBubbleRelativeSize(0.15)
+  //   .keyAccessor(function (p) {
+  //     // X axis
+  //     return p.value.totalProjects;
+  //   })
+  //   .valueAccessor(function (p) {
+  //     // Y axis
+  //     return p.value.avgPartners;
+  //   })
+  //   .radiusValueAccessor(function (p) {
+  //     return p.value.totalFunding;
+  //   })
+  //   .colorAccessor(function (p) {
+  //     return p.value.totalFunding;
+  //   })
+  //   .transitionDuration(transitionDuration)
+  //   .elasticRadius(true)
+  //   .elasticY(true)
+  //   .elasticX(true)
+  //   .yAxisPadding("15%")
+  //   .xAxisPadding("18%")
+  //   .xAxisLabel('Total number of projects')
+  //   .yAxisLabel('Average number of partners')
+  //   .label(function (p) {
+  //     return p.key;
+  //   })
+  //   .title(function (p) {
+  //     var numberFormat = d3.format("$.2r");
+  //     return p.key 
+  //       + "\n" 
+  //       + "Total projects: " + p.value.totalProjects + "\n" 
+  //       + "Total funding: " + formatEuro(p.value.totalFunding) + "\n"
+  //       + "Average number of partners: " + formatEuro(p.value.avgPartners) + "\n";
+  //   })
+  //   .renderLabel(true)
+  //   .renderTitle(true);
+
   fundingChart.width(850)
     .height(200)
     .dimension(byFunding)
@@ -307,9 +385,21 @@ d3.json("projects_all.json", function(error, data) {
     .title(formatPartnerSliceTitles)
     .colors(d3.scale.category20c())
     .dimension(byPartners)
-    .group(byPartnersGroup)
-    .transitionDuration(500);
-   
+    .group(byPartnersGroup);
+  
+  subjectChart
+    .height(400)
+    .width(450)
+    .transitionDuration(transitionDuration)
+    .renderLabel(false)
+    .elasticX(true)
+    .renderTitleLabel(true)
+    .colors(d3.scale.category20c())
+    .dimension(bySubject)
+    .cap(10)
+    .othersLabel('other')
+    .group(bySubjectGroup);
+
   dataTable.width(960)
     .height(800)
     .dimension(byFundingTable)
@@ -328,7 +418,7 @@ d3.json("projects_all.json", function(error, data) {
       function(d) { return formatMonth(d.date); },
       function(d) { return formatMonth(d.end_date); },
       function(d) { return formatEuro(d.funding); },
-      function(d) { return d.rcn + '<br><small>' + '<a href="' + d.url + '" target="_blank">view on OC</a></small>'; }
+      function(d) { return d.rcn + '<br><small>' + '<a href="http://api.openconsortium.eu/cordis/1/projects/' + d.rcn + '" target="_blank">JSON</a> <a href="' + d.url + '" target="_blank">OC</a></small>'; }
     ])
     .sortBy(function(d) { return d.funding; })
     .order(d3.descending);
