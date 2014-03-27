@@ -2,15 +2,17 @@
 var bubbleChart = dc.bubbleChart('#dc-bubble');
 // var bubbleChartCity = dc.bubbleChart('#dc-bubble-city');
 var dataTable = dc.dataTable("#dc-table-graph");
-var startChart = dc.barChart("#dc-start-chart");
-var endChart = dc.barChart("#dc-end-chart");
+var startChart = dc.lineChart("#dc-start-chart");
+var endChart = dc.lineChart("#dc-end-chart");
 var partnersChart = dc.pieChart("#dc-partners-chart");
-var fundingChart = dc.lineChart("#dc-funding-chart");
+var fundingChart = dc.barChart("#dc-funding-chart");
+// var fundingChart = dc.lineChart("#dc-funding-chart");
 var subjectChart = dc.rowChart('#dc-subject-chart');
 
 // d3.json("projects.json", function(error, data) {
-d3.json("projects_1000.json", function(error, data) {
+// d3.json("projects_1000.json", function(error, data) {
 // d3.json("projects_all.json", function(error, data) {
+d3.json("projects_all_27_03_14.json", function(error, data) {
 
   // Various formatters.
   var formatNumber = d3.format(",d"),
@@ -213,7 +215,7 @@ d3.json("projects_1000.json", function(error, data) {
     .transitionDuration(transitionDuration)
     .colors(d3.scale.category10())
     .x(d3.scale.linear())
-    .y(d3.scale.linear())
+    .y(d3.scale.linear().domain([0,12]))
     .maxBubbleRelativeSize(0.15)
     .keyAccessor(function (p) {
       // X axis
@@ -231,7 +233,7 @@ d3.json("projects_1000.json", function(error, data) {
     })
     .transitionDuration(transitionDuration)
     .elasticRadius(true)
-    .elasticY(true)
+    // .elasticY(true)
     .elasticX(true)
     .yAxisPadding("15%")
     .xAxisPadding("18%")
@@ -320,8 +322,9 @@ d3.json("projects_1000.json", function(error, data) {
     .dimension(byFunding)
     .group(byFundingGroup)
     .x(d3.scale.linear().domain([0,41]))
+    .centerBar(true)
     // .x(d3.scale.linear().domain([0,50]))
-    .renderArea(true)
+    // .renderArea(true)
     .elasticY(true)
     .filterPrinter(function (filters) {
       var filter = filters[0], s = "";
@@ -331,7 +334,11 @@ d3.json("projects_1000.json", function(error, data) {
     .transitionDuration(transitionDuration);
   fundingChart.yAxis().ticks(0);
   fundingChart.xAxis().tickFormat(function (d) {
-    return formatEuro(d*100000);
+    formatted = formatEuro(d*100000);
+    if (d == 40) {
+      formatted = formatted + '+'
+    }
+    return formatted;
   });
 
   var dateFilter = function(filters) {
@@ -345,8 +352,8 @@ d3.json("projects_1000.json", function(error, data) {
     .dimension(byStartDate)
     .group(byStartDateGroup)
     .transitionDuration(transitionDuration)
-    .centerBar(true)
-    .gap(2)
+    // .centerBar(true)
+    // .gap(2)
     .filterPrinter(dateFilter)
     // .filter([new Date(2006, 1, 1), new Date(2020, 2, 1)])
     .x(d3.time.scale()
@@ -354,7 +361,7 @@ d3.json("projects_1000.json", function(error, data) {
         .rangeRound([0, 10 * 90]))
     .yAxisLabel("Projects")
     .elasticY(true)
-    .yAxis().ticks(0);
+    .yAxis().ticks(2);
   
   endChart.width(850)
     .height(120)
@@ -362,17 +369,17 @@ d3.json("projects_1000.json", function(error, data) {
     .group(byEndDateGroup)
     .transitionDuration(transitionDuration)
     .filterPrinter(dateFilter)
-    .centerBar(true)
+    // .centerBar(true)
     // .gap(1)
-    .barPadding(-0.9)
-    .outerPadding(0.05)
+    // .barPadding(-0.9)
+    // .outerPadding(0.05)
     // .filter([new Date(2006, 1, 1), new Date(2020, 2, 1)])
     .x(d3.time.scale()
         .domain([new Date(2006, 0, 1), new Date(2020, 3, 1)])
         .rangeRound([0, 10 * 90]))
     .yAxisLabel("Projects")
     .elasticY(true)
-    .yAxis().ticks(0);
+    .yAxis().ticks(2);
 
   partnersChart
     .height(200)
